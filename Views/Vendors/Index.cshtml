@@ -1,0 +1,53 @@
+@using INSolPOS.Models
+@model List<Vendor>
+@{
+    ViewBag.Title = "Vendors";
+    ViewBag.NavContext = "vendors";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="flex justify-between items-center mb-4">
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count vendor(s)</div>
+    <button onclick="document.getElementById('addVendor').classList.add('open')" class="btn btn-primary"><i class="fas fa-plus"></i> Add Vendor</button>
+</div>
+<div class="card">
+    <div class="card-header"><span class="card-title">Vendor Registry</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Name</th><th>Company</th><th>Phone</th><th>CNIC</th><th class="text-right">Opening Bal</th><th>Registered</th><th>Actions</th></tr></thead>
+            <tbody>
+                @foreach (var v in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@v.Name</td>
+                        <td class="text-muted">@(v.CompanyName ?? "—")</td>
+                        <td class="font-mono text-muted">@(v.Phone ?? "—")</td>
+                        <td class="font-mono text-muted text-sm">@(v.CNIC ?? "—")</td>
+                        <td class="text-right font-mono">@v.OpeningBalance.ToString("N2")</td>
+                        <td class="text-muted text-sm">@v.RegisteredAt.ToString("dd MMM yy")</td>
+                        <td><a href="/Vendors/Edit/@v.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="modal-backdrop" id="addVendor">
+    <div class="modal" style="min-width:500px;">
+        <div class="modal-title"><i class="fas fa-industry text-accent" style="margin-right:8px;"></i>Register Vendor</div>
+        <form method="post" action="/Vendors/Create">
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:span 2;"><label class="form-label">FULL NAME *</label><input type="text" name="Name" class="form-control" required /></div>
+                <div class="form-group"><label class="form-label">COMPANY NAME</label><input type="text" name="CompanyName" class="form-control" /></div>
+                <div class="form-group"><label class="form-label">PHONE</label><input type="text" name="Phone" class="form-control font-mono" /></div>
+                <div class="form-group"><label class="form-label">CNIC</label><input type="text" name="CNIC" class="form-control font-mono" /></div>
+                <div class="form-group"><label class="form-label">OPENING BALANCE</label><input type="number" name="OpeningBalance" class="form-control font-mono" value="0" /></div>
+                <div class="form-group" style="grid-column:span 2;"><label class="form-label">ADDRESS</label><textarea name="Address" class="form-control" rows="2"></textarea></div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Register</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addVendor').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {<script>document.querySelectorAll('.modal-backdrop').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')})});</script>}

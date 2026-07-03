@@ -1,0 +1,116 @@
+@using INSolPOS.Models
+@model List<InitialCapital>
+@{
+    ViewBag.Title = "Initial Capital";
+    ViewBag.NavContext = "capital";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    decimal total = ViewBag.Total ?? 0m;
+}
+
+<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="stat-card">
+        <div class="stat-label">Total Capital</div>
+        <div class="stat-value font-mono text-accent">Rs. @total.ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Cash Capital</div>
+        <div class="stat-value font-mono text-green" style="font-size:20px;">
+            Rs. @Model.Where(c => c.Type == CapitalType.Cash).Sum(c => c.Amount).ToString("N0")
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Bank Capital</div>
+        <div class="stat-value font-mono text-accent" style="font-size:20px;">
+            Rs. @Model.Where(c => c.Type == CapitalType.Bank).Sum(c => c.Amount).ToString("N0")
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Assets / Inventory</div>
+        <div class="stat-value font-mono text-purple" style="font-size:20px;">
+            Rs. @Model.Where(c => c.Type == CapitalType.Asset || c.Type == CapitalType.Inventory).Sum(c => c.Amount).ToString("N0")
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Capital Entries</span></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date</th><th>Description</th><th>Type</th><th class="text-right">Amount</th><th>Notes</th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model.OrderByDescending(c => c.Date))
+                    {
+                        <tr>
+                            <td class="font-mono text-muted text-sm">@c.Date.ToString("dd MMM yyyy")</td>
+                            <td class="fw-semibold">@c.Description</td>
+                            <td>
+                                @switch (c.Type)
+                                {
+                                    case CapitalType.Cash: <span class="badge badge-success">Cash</span> break;
+                                    case CapitalType.Bank: <span class="badge badge-accent">Bank</span> break;
+                                    case CapitalType.Asset: <span class="badge badge-warning">Asset</span> break;
+                                    case CapitalType.Inventory: <span class="badge badge-info">Inventory</span> break;
+                                }
+                            </td>
+                            <td class="text-right font-mono fw-bold text-accent">Rs. @c.Amount.ToString("N2")</td>
+                            <td class="text-muted text-sm">@(c.Notes ?? "—")</td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--c-text3);">No capital entries yet.</td></tr>
+                    }
+                </tbody>
+                @if (Model.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--c-surface2);font-weight:700;">
+                            <td colspan="3">TOTAL CAPITAL</td>
+                            <td class="text-right font-mono text-accent">Rs. @total.ToString("N2")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+
+    <div style="position:sticky;top:80px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title"><i class="fas fa-coins text-amber" style="margin-right:8px;"></i>Add Capital Entry</span></div>
+            <div class="card-body">
+                <form method="post" action="/Capital/Add">
+                    <div class="form-group mb-3">
+                        <label class="form-label">DESCRIPTION *</label>
+                        <input type="text" name="Description" class="form-control" required placeholder="e.g. Initial cash investment" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">AMOUNT (Rs.) *</label>
+                        <input type="number" name="Amount" class="form-control font-mono" required min="0.01" step="0.01" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">TYPE</label>
+                        <select name="Type" class="form-control">
+                            <option value="1">Cash</option>
+                            <option value="2">Bank</option>
+                            <option value="3">Asset</option>
+                            <option value="4">Inventory</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">DATE</label>
+                        <input type="date" name="Date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="form-label">NOTES</label>
+                        <textarea name="Notes" class="form-control" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full" style="justify-content:center;">
+                        <i class="fas fa-plus"></i> Add Capital Entry
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

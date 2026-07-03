@@ -1,0 +1,84 @@
+@using INSolPOS.Models
+@model List<StaffSalary>
+@{
+    ViewBag.Title = "Staff Salaries";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var staff = ViewBag.Staff as Staff;
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/Staff/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="card mb-4" style="max-width:500px;">
+    <div class="card-body">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--c-accent),var(--c-purple));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;">
+                @staff?.Name?.Substring(0,1)
+            </div>
+            <div>
+                <div style="font-size:18px;font-weight:800;">@staff?.Name</div>
+                <div class="text-muted text-sm">@staff?.Designation</div>
+                <div class="font-mono text-accent">Basic: Rs. @staff?.BasicSalary.ToString("N0")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Salary History</span>
+        <span class="badge badge-accent">@Model.Count records</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th class="text-right">Basic</th>
+                    <th class="text-right">Allowances</th>
+                    <th class="text-right">Deductions</th>
+                    <th class="text-right">Adv. Deducted</th>
+                    <th class="text-right">Net Salary</th>
+                    <th>Status</th>
+                    <th>Paid On</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                    @using System.Globalization
+
+                        <td class="fw-semibold">
+                            @if (s != null && s.Month >= 1 && s.Month <= 12)
+                            {
+                                @($"{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(s.Month)} {s.Year}")
+                            }
+                            else
+                            {
+                                @: —
+                            }
+                        </td>
+                        <td class="text-right font-mono">@s.BasicSalary.ToString("N0")</td>
+                        <td class="text-right font-mono text-green">+@s.Allowances.ToString("N0")</td>
+                        <td class="text-right font-mono text-red">-@s.Deductions.ToString("N0")</td>
+                        <td class="text-right font-mono text-amber">-@s.AdvanceDeduction.ToString("N0")</td>
+                        <td class="text-right font-mono fw-bold text-accent">Rs. @s.NetSalary.ToString("N0")</td>
+                        <td>
+                            @if (s.IsPaid)
+                            { <span class="badge badge-success"><i class="fas fa-check"></i> Paid</span> }
+                            else
+                            { <span class="badge badge-warning">Pending</span> }
+                        </td>
+                        <td class="text-muted text-sm">@(s.PaidOn?.ToString("dd MMM yy") ?? "—")</td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--c-text3);">No salary records found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

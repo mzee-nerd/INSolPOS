@@ -1,0 +1,116 @@
+@using INSolPOS.Models
+@{
+    ViewBag.Title = "Load Vehicle";
+    ViewBag.NavContext = "vehicles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var vehicle = ViewBag.Vehicle as Vehicle;
+    var products = ViewBag.Products as List<Product> ?? new();
+}
+<div class="flex gap-2 mb-4">
+    <a href="/Vehicles/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">
+                <i class="fas fa-truck-loading text-purple" style="margin-right:8px;"></i>
+                Loading — @vehicle?.VehicleNo
+            </span>
+            <button class="btn btn-primary btn-sm" onclick="addLoadRow()"><i class="fas fa-plus"></i> Add Product</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Product</th><th>Available Stock</th><th>Load Qty (Loose)</th><th>Load Qty (Carton)</th><th></th></tr></thead>
+                <tbody id="loadRows">
+                    <tr id="emptyLoadRow">
+                        <td colspan="5" style="text-align:center;padding:32px;color:var(--c-text3);">Click "Add Product" to begin loading</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="position:sticky;top:80px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Vehicle Info</span></div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                    <div class="flex justify-between"><span class="text-muted">Vehicle No</span><span class="font-mono fw-bold text-accent">@vehicle?.VehicleNo</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Model</span><span>@(vehicle?.Model ?? "—")</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Driver</span><span class="fw-semibold">@(vehicle?.DriverName ?? "—")</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Phone</span><span class="font-mono">@(vehicle?.DriverPhone ?? "—")</span></div>
+                </div>
+
+                <form method="post" action="/Vehicles/LoadVehicle" id="loadForm" style="margin-top:16px;">
+                    <input type="hidden" name="vehicleId" value="@vehicle?.Id" />
+                    <div id="loadHiddenInputs"></div>
+                    <div class="form-group mb-4">
+                        <label class="form-label">NOTES</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full" style="justify-content:center;" id="loadBtn" disabled>
+                        <i class="fas fa-truck-loading"></i> Confirm Load
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        products.Select(p => new { p.Id, p.Name, p.CurrentStock, p.CartonQty })));
+    let rowCount = 0;
+
+    function addLoadRow() {
+        document.getElementById('emptyLoadRow')?.remove();
+        rowCount++;
+        const r = document.createElement('tr');
+        r.id = 'lr_' + rowCount;
+        r.innerHTML = `
+            <td>
+                <select name="productIds" class="form-control" style="min-width:160px;" onchange="onProdChange(this,${rowCount})">
+                    <option value="">Select product...</option>
+                    ${products.map(p=>`<option value="${p.id}" data-stock="${p.currentStock}" data-carton="${p.cartonQty}">${p.name}</option>`).join('')}
+                </select>
+            </td>
+            <td><span id="lstock_${rowCount}" class="font-mono text-muted">—</span></td>
+            <td><input type="number" name="quantities" value="0" min="0" step="0.5"
+                class="form-control font-mono" style="width:90px;" oninput="updateLoad()" id="lqty_${rowCount}" /></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <input type="number" value="0" min="0" step="1" id="lctn_${rowCount}"
+                        class="form-control font-mono" style="width:70px;" oninput="convertCarton(${rowCount})" />
+                    <span class="text-muted text-xs" id="lctnlbl_${rowCount}">ctn</span>
+                </div>
+            </td>
+            <td><button type="button" class="btn btn-danger btn-xs btn-icon" onclick="document.getElementById('lr_${rowCount}').remove();updateLoad()"><i class="fas fa-times"></i></button></td>
+        `;
+        document.getElementById('loadRows').appendChild(r);
+        updateLoad();
+    }
+
+    function onProdChange(sel, rowId) {
+        const opt = sel.options[sel.selectedIndex];
+        document.getElementById('lstock_' + rowId).textContent = opt.dataset.stock || '0';
+        document.getElementById('lctnlbl_' + rowId).textContent = 'x' + (opt.dataset.carton || 1) + ' pcs';
+    }
+
+    function convertCarton(rowId) {
+        const sel = document.querySelector(`#lr_${rowId} [name="productIds"]`);
+        const cartonSize = parseInt(sel?.options[sel.selectedIndex]?.dataset.carton || 1);
+        const ctns = parseFloat(document.getElementById('lctn_' + rowId)?.value) || 0;
+        const looseEl = document.getElementById('lqty_' + rowId);
+        if (looseEl) looseEl.value = (ctns * cartonSize).toFixed(1);
+        updateLoad();
+    }
+
+    function updateLoad() {
+        const rows = document.querySelectorAll('[name="productIds"]');
+        const hasData = Array.from(rows).some(s => s.value);
+        document.getElementById('loadBtn').disabled = !hasData;
+    }
+</script>
+}

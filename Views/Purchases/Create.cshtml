@@ -1,0 +1,184 @@
+@using INSolPOS.Models
+@{
+    ViewBag.Title = "New Purchase";
+    ViewBag.NavContext = "purchases";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var vendors = ViewBag.Vendors as List<Vendor> ?? new();
+    var products = ViewBag.Products as List<Product> ?? new();
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/Purchases/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+    <!-- LEFT: Items -->
+    <div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <span class="card-title">Add Products</span>
+                <button type="button" class="btn btn-primary btn-sm" onclick="addRow()"><i class="fas fa-plus"></i> Add Row</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:200px;">Product</th>
+                            <th>Carton Qty</th>
+                            <th>Loose Qty</th>
+                            <th>Purchase Price</th>
+                            <th>Batch No</th>
+                            <th>Expiry</th>
+                            <th>Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemRows">
+                        <tr id="emptyRow">
+                            <td colspan="8" style="text-align:center;padding:32px;color:var(--c-text3);">
+                                <i class="fas fa-plus-circle" style="font-size:28px;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                                Click "Add Row" to add products
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Summary -->
+    <div style="position:sticky;top:80px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Purchase Details</span></div>
+            <div class="card-body">
+                <form method="post" action="/Purchases/Create" id="purchForm">
+                    <div class="form-group">
+                        <label class="form-label">VENDOR *</label>
+                        <select name="VendorId" class="form-control" required>
+                            <option value="">Select vendor...</option>
+                            @foreach (var v in vendors)
+                            {
+                                <option value="@v.Id">@v.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PURCHASE DATE</label>
+                        <input type="datetime-local" name="PurchaseDate" class="form-control"
+                               value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PAYMENT METHOD</label>
+                        <select name="PaymentMethod" class="form-control">
+                            <option value="1">Cash</option>
+                            <option value="2">Bank Transfer</option>
+                            <option value="3">Cheque</option>
+                            <option value="4">Credit</option>
+                        </select>
+                    </div>
+
+                    <div style="background:var(--c-surface2);border:1px solid var(--c-border);border-radius:10px;padding:16px;margin:16px 0;">
+                        <div class="flex justify-between mb-2 text-sm">
+                            <span class="text-muted">Sub Total</span>
+                            <span class="font-mono" id="subTotalDisp">Rs. 0.00</span>
+                        </div>
+                        <div class="flex justify-between mb-2 text-sm">
+                            <span class="text-muted">Discount</span>
+                            <input type="number" name="Discount" value="0" min="0" class="form-control font-mono" style="width:90px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
+                        </div>
+                        <div class="flex justify-between mb-2 text-sm">
+                            <span class="text-muted">Tax</span>
+                            <input type="number" name="Tax" value="0" min="0" class="form-control font-mono" style="width:90px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
+                        </div>
+                        <div style="border-top:1px solid var(--c-border);padding-top:12px;margin-top:8px;" class="flex justify-between">
+                            <span style="font-weight:700;">TOTAL</span>
+                            <span class="font-mono fw-bold text-accent" style="font-size:18px;" id="totalDisp">Rs. 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">PAID AMOUNT</label>
+                        <input type="number" name="PaidAmount" id="paidAmt" class="form-control font-mono" value="0" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NOTES</label>
+                        <textarea name="Notes" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div id="hiddenInputs"></div>
+                    <input type="hidden" name="SubTotal" id="subTotalHidden" value="0" />
+
+                    <button type="submit" class="btn btn-primary w-full" style="justify-content:center;font-size:15px;padding:13px;">
+                        <i class="fas fa-save"></i> Save Purchase
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(products.Select(p => new { p.Id, p.Name, p.PurchasePrice, p.CartonQty, p.BatchNo, ExpiryDate = p.ExpiryDate?.ToString("yyyy-MM-dd") })));
+    let rowCount = 0;
+
+    function addRow() {
+        document.getElementById('emptyRow')?.remove();
+        rowCount++;
+        const row = document.createElement('tr');
+        row.id = 'row_' + rowCount;
+        row.innerHTML = `
+            <td>
+                <select name="productIds" class="form-control" style="min-width:160px;" onchange="onProductChange(this, ${rowCount})">
+                    <option value="">Select...</option>
+                    ${products.map(p => `<option value="${p.id}" data-price="${p.purchasePrice}" data-carton="${p.cartonQty}" data-batch="${p.batchNo||''}" data-expiry="${p.expiryDate||''}">${p.name}</option>`).join('')}
+                </select>
+            </td>
+            <td><input type="number" name="cartonQtys" value="0" min="0" step="0.5" class="form-control font-mono" style="width:75px;" oninput="calcRow(${rowCount})" id="carton_${rowCount}" /></td>
+            <td><input type="number" name="looseQtys" value="0" min="0" step="0.5" class="form-control font-mono" style="width:75px;" oninput="calcRow(${rowCount})" id="loose_${rowCount}" /></td>
+            <td><input type="number" name="prices" value="0" min="0" step="0.01" class="form-control font-mono" style="width:100px;" oninput="calcRow(${rowCount})" id="price_${rowCount}" /></td>
+            <td><input type="text" name="batchNos" placeholder="Batch#" class="form-control" style="width:90px;" id="batch_${rowCount}" /></td>
+            <td><input type="date" name="expiryDates" class="form-control" style="width:130px;" id="expiry_${rowCount}" /></td>
+            <td class="font-mono fw-semibold text-accent" id="amt_${rowCount}">0.00</td>
+            <td><button type="button" class="btn btn-danger btn-xs btn-icon" onclick="document.getElementById('row_${rowCount}').remove();calcTotal()"><i class="fas fa-times"></i></button></td>
+        `;
+        document.getElementById('itemRows').appendChild(row);
+        calcTotal();
+    }
+
+    function onProductChange(sel, rowId) {
+        const opt = sel.options[sel.selectedIndex];
+        document.getElementById('price_' + rowId).value = opt.dataset.price || 0;
+        document.getElementById('batch_' + rowId).value = opt.dataset.batch || '';
+        document.getElementById('expiry_' + rowId).value = opt.dataset.expiry || '';
+        calcRow(rowId);
+    }
+
+    function calcRow(rowId) {
+        const carton = parseFloat(document.querySelector(`#row_${rowId} [name="cartonQtys"]`)?.value) || 0;
+        const loose = parseFloat(document.querySelector(`#row_${rowId} [name="looseQtys"]`)?.value) || 0;
+        const price = parseFloat(document.getElementById('price_' + rowId)?.value) || 0;
+        const productSel = document.querySelector(`#row_${rowId} [name="productIds"]`);
+        const cartonSize = parseInt(productSel?.options[productSel.selectedIndex]?.dataset.carton || 1);
+        const totalQty = (carton * cartonSize) + loose;
+        const amt = totalQty * price;
+        const amtEl = document.getElementById('amt_' + rowId);
+        if (amtEl) amtEl.textContent = amt.toFixed(2);
+        calcTotal();
+    }
+
+    function calcTotal() {
+        let subTotal = 0;
+        document.querySelectorAll('[id^="amt_"]').forEach(el => {
+            subTotal += parseFloat(el.textContent) || 0;
+        });
+        const disc = parseFloat(document.querySelector('[name="Discount"]')?.value) || 0;
+        const tax = parseFloat(document.querySelector('[name="Tax"]')?.value) || 0;
+        const total = subTotal + tax - disc;
+        document.getElementById('subTotalDisp').textContent = 'Rs. ' + subTotal.toFixed(2);
+        document.getElementById('totalDisp').textContent = 'Rs. ' + total.toFixed(2);
+        document.getElementById('subTotalHidden').value = subTotal.toFixed(2);
+        document.getElementById('paidAmt').value = total.toFixed(2);
+    }
+</script>
+}

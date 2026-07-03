@@ -1,0 +1,56 @@
+@using INSolPOS.Models
+@model List<Product>
+@{
+    ViewBag.Title = "Expiry Report";
+    ViewBag.NavContext = "expiry";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <div class="flex gap-2">
+        <span class="badge badge-danger" style="font-size:12px;padding:6px 12px;">@Model.Count(p => p.ExpiryDate < DateTime.Now) Already Expired</span>
+        <span class="badge badge-warning" style="font-size:12px;padding:6px 12px;">@Model.Count(p => p.ExpiryDate >= DateTime.Now && p.ExpiryDate <= DateTime.Now.AddDays(30)) Expiring in 30 days</span>
+    </div>
+    <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-calendar-times text-red" style="margin-right:8px;"></i>Product Expiry Report</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Batch No</th>
+                    <th class="text-right">Stock</th>
+                    <th>Expiry Date</th>
+                    <th>Days Left</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.OrderBy(p => p.ExpiryDate))
+                {
+                    int daysLeft = p.ExpiryDate.HasValue ? (int)(p.ExpiryDate.Value - DateTime.Today).TotalDays : 999;
+                    <tr>
+                        <td class="fw-semibold">@p.Name</td>
+                        <td class="font-mono text-muted">@(p.BatchNo ?? "—")</td>
+                        <td class="text-right font-mono">@p.CurrentStock.ToString("N2")</td>
+                        <td class="font-mono @(daysLeft < 0 ? "text-red" : daysLeft <= 30 ? "text-amber" : "text-muted")">
+                            @p.ExpiryDate?.ToString("dd MMM yyyy")
+                        </td>
+                        <td class="font-mono @(daysLeft < 0 ? "text-red fw-bold" : daysLeft <= 30 ? "text-amber fw-bold" : "text-muted")">
+                            @(daysLeft < 0 ? $"{Math.Abs(daysLeft)} days ago" : $"{daysLeft} days")
+                        </td>
+                        <td>
+                            @if (daysLeft < 0) { <span class="badge badge-danger"><i class="fas fa-times-circle"></i> Expired</span> }
+                            else if (daysLeft <= 7) { <span class="badge badge-danger">Critical</span> }
+                            else if (daysLeft <= 30) { <span class="badge badge-warning">Expiring Soon</span> }
+                            else { <span class="badge badge-success">OK</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

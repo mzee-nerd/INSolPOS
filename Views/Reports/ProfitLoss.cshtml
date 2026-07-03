@@ -1,0 +1,162 @@
+@using INSolPOS.Services
+@model ProfitLossReport
+@{
+    ViewBag.Title = "Profit & Loss Report";
+    ViewBag.NavContext = "pl";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <form method="get" class="flex gap-2 items-center">
+        <label class="form-label" style="white-space:nowrap;">From:</label>
+        <input type="date" name="from" value="@Model?.From.ToString("yyyy-MM-dd")" class="form-control" style="width:150px;" />
+        <label class="form-label" style="white-space:nowrap;">To:</label>
+        <input type="date" name="to" value="@Model?.To.ToString("yyyy-MM-dd")" class="form-control" style="width:150px;" />
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Generate</button>
+    </form>
+    <button onclick="window.print()" class="btn btn-secondary no-print"><i class="fas fa-print"></i> Print</button>
+</div>
+
+@if (Model != null)
+{
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Net Sales</span>
+                <div class="stat-icon" style="background:rgba(79,110,247,0.15);color:var(--c-accent);"><i class="fas fa-arrow-up"></i></div>
+            </div>
+            <div class="stat-value font-mono text-accent">@Model.NetSales.ToString("N0")</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Net Purchases</span>
+                <div class="stat-icon" style="background:rgba(168,85,247,0.15);color:var(--c-purple);"><i class="fas fa-arrow-down"></i></div>
+            </div>
+            <div class="stat-value font-mono" style="color:var(--c-purple);">@Model.NetPurchases.ToString("N0")</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Gross Profit</span>
+                <div class="stat-icon" style="background:rgba(34,197,94,0.15);color:var(--c-green);"><i class="fas fa-chart-line"></i></div>
+            </div>
+            <div class="stat-value font-mono @(Model.GrossProfit >= 0 ? "text-green" : "text-red")">@Model.GrossProfit.ToString("N0")</div>
+        </div>
+        <div class="stat-card" style="border-color:@(Model.NetProfit >= 0 ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)");">
+            <div class="stat-card-header">
+                <span class="stat-label">Net Profit</span>
+                <div class="stat-icon" style="background:rgba(@(Model.NetProfit >= 0 ? "34,197,94" : "239,68,68"),0.15);color:var(@(Model.NetProfit >= 0 ? "--c-green" : "--c-red"));"><i class="fas fa-balance-scale"></i></div>
+            </div>
+            <div class="stat-value font-mono @(Model.NetProfit >= 0 ? "text-green" : "text-red")" style="font-size:22px;">
+                Rs. @Model.NetProfit.ToString("N2")
+            </div>
+            <div class="stat-change @(Model.NetProfit >= 0 ? "up" : "down")">
+                @(Model.NetProfit >= 0 ? "▲ Profit" : "▼ Loss")
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <!-- Income -->
+        <div class="card">
+            <div class="card-header"><span class="card-title text-green"><i class="fas fa-arrow-circle-up" style="margin-right:6px;"></i>Income</span></div>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Total Sales</td>
+                            <td class="text-right font-mono">Rs. @Model.TotalSales.ToString("N2")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">(-) Sale Returns</td>
+                            <td class="text-right font-mono text-red">- Rs. @Model.SaleReturns.ToString("N2")</td>
+                        </tr>
+                        <tr style="border-top:2px solid var(--c-border);font-weight:700;">
+                            <td>Net Sales</td>
+                            <td class="text-right font-mono text-accent">Rs. @Model.NetSales.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cost of Goods -->
+        <div class="card">
+            <div class="card-header"><span class="card-title text-red"><i class="fas fa-arrow-circle-down" style="margin-right:6px;"></i>Cost of Goods</span></div>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Total Purchases</td>
+                            <td class="text-right font-mono">Rs. @Model.TotalPurchases.ToString("N2")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">(-) Purchase Returns</td>
+                            <td class="text-right font-mono text-green">- Rs. @Model.PurchaseReturns.ToString("N2")</td>
+                        </tr>
+                        <tr style="border-top:2px solid var(--c-border);font-weight:700;">
+                            <td>Net Purchases</td>
+                            <td class="text-right font-mono text-red">Rs. @Model.NetPurchases.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expenses -->
+        <div class="card">
+            <div class="card-header"><span class="card-title text-amber"><i class="fas fa-minus-circle" style="margin-right:6px;"></i>Expenses</span></div>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Staff Salaries</td>
+                            <td class="text-right font-mono">Rs. @Model.SalaryExpenses.ToString("N2")</td>
+                        </tr>
+                        <tr>
+                            <td>Sale Commissions</td>
+                            <td class="text-right font-mono">Rs. @Model.CommissionExpenses.ToString("N2")</td>
+                        </tr>
+                        <tr>
+                            <td>Other Expenses</td>
+                            <td class="text-right font-mono">Rs. @Model.OtherExpenses.ToString("N2")</td>
+                        </tr>
+                        <tr style="border-top:2px solid var(--c-border);font-weight:700;">
+                            <td>Total Expenses</td>
+                            <td class="text-right font-mono text-amber">Rs. @Model.TotalExpenses.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card" style="border-color:@(Model.NetProfit >= 0 ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)");">
+            <div class="card-header"><span class="card-title">Summary</span></div>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td class="fw-semibold">Gross Profit</td>
+                            <td class="text-right font-mono @(Model.GrossProfit >= 0 ? "text-green" : "text-red")">Rs. @Model.GrossProfit.ToString("N2")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">(-) Total Expenses</td>
+                            <td class="text-right font-mono text-red">- Rs. @Model.TotalExpenses.ToString("N2")</td>
+                        </tr>
+                        <tr style="border-top:2px solid var(--c-border);">
+                            <td style="font-size:16px;font-weight:800;">NET @(Model.NetProfit >= 0 ? "PROFIT" : "LOSS")</td>
+                            <td class="text-right font-mono fw-bold @(Model.NetProfit >= 0 ? "text-green" : "text-red")" style="font-size:20px;">
+                                Rs. @Math.Abs(Model.NetProfit).ToString("N2")
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="text-align:center;padding:12px;">
+                                <span style="font-size:12px;color:var(--c-text3);">Period: @Model.From.ToString("dd MMM yyyy") — @Model.To.ToString("dd MMM yyyy")</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

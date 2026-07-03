@@ -1,0 +1,132 @@
+@using INSolPOS.Models
+@model List<ApplicationUser>
+@{
+    ViewBag.Title = "User Management";
+    ViewBag.NavContext = "users";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="flex justify-between items-center mb-4">
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count user(s)</div>
+    <button onclick="document.getElementById('addUser').classList.add('open')" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add User</button>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">System Users</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Created</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--c-accent),var(--c-purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">
+                                    @u.FullName.Substring(0,1).ToUpper()
+                                </div>
+                                <div class="fw-semibold">@u.FullName</div>
+                            </div>
+                        </td>
+                        <td class="font-mono text-muted">@u.Username</td>
+                        <td>
+                            @switch (u.Role)
+                            {
+                                case UserRole.SuperAdmin:
+                                    <span class="badge badge-danger"><i class="fas fa-crown"></i> Super Admin</span>
+                                    break;
+                                case UserRole.Admin:
+                                    <span class="badge badge-warning">Admin</span>
+                                    break;
+                                case UserRole.Teller:
+                                    <span class="badge badge-info">Teller</span>
+                                    break;
+                                case UserRole.SalesMen:
+                                    <span class="badge badge-success">Salesman</span>
+                                    break;
+                            }
+                        </td>
+                        <td class="font-mono text-muted text-sm">@(u.Phone ?? "—")</td>
+                        <td class="text-muted text-sm">@(u.Email ?? "—")</td>
+                        <td class="text-muted text-sm">@u.CreatedAt.ToString("dd MMM yy")</td>
+                        <td>@(u.IsActive ? Html.Raw("<span class='badge badge-success'>Active</span>") : Html.Raw("<span class='badge badge-danger'>Inactive</span>"))</td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="/Users/Edit/@u.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a>
+                                @if (u.Id != ViewBag.CurrentUserId)
+                                {
+                                    <form method="post" action="/Users/Delete/@u.Id" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Deactivate this user?')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-backdrop" id="addUser">
+    <div class="modal" style="min-width:520px;">
+        <div class="modal-title"><i class="fas fa-user-plus text-accent" style="margin-right:8px;"></i>Add New User</div>
+        <form method="post" action="/Users/Create">
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">FULL NAME *</label>
+                    <input type="text" name="FullName" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">USERNAME *</label>
+                    <input type="text" name="Username" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PASSWORD *</label>
+                    <input type="password" name="password" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ROLE *</label>
+                    <select name="Role" class="form-control" required>
+                        <option value="2">Admin</option>
+                        <option value="3">Teller</option>
+                        <option value="4">Salesman</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PHONE</label>
+                    <input type="text" name="Phone" class="form-control font-mono" />
+                </div>
+                <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">EMAIL</label>
+                    <input type="email" name="Email" class="form-control" />
+                </div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create User</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addUser').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.querySelectorAll('.modal-backdrop').forEach(el => {
+        el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+    });
+</script>
+}

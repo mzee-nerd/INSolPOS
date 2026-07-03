@@ -1,0 +1,49 @@
+@using INSolPOS.Models
+@model ApplicationUser
+@{
+    ViewBag.Title = "Edit User";
+    ViewBag.NavContext = "users";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="flex gap-2 mb-4">
+    <a href="/Users/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+<div class="card" style="max-width:660px;">
+    <div class="card-header"><span class="card-title"><i class="fas fa-edit text-accent" style="margin-right:8px;"></i>Edit User</span></div>
+    <div class="card-body">
+        <form method="post" action="/Users/Edit">
+            <input type="hidden" name="Id" value="@Model?.Id" />
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">FULL NAME *</label>
+                    <input type="text" name="FullName" class="form-control" value="@Model?.FullName" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">USERNAME *</label>
+                    <input type="text" name="Username" class="form-control" value="@Model?.Username" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ROLE *</label>
+                    <select name="Role" class="form-control" required>
+                        <option value="1" selected="@(Model?.Role == UserRole.SuperAdmin)">Super Admin</option>
+                        <option value="2" selected="@(Model?.Role == UserRole.Admin)">Admin</option>
+                        <option value="3" selected="@(Model?.Role == UserRole.Teller )">Teller</option>
+                        <option value="4" selected="@(Model?.Role == UserRole.SalesMen)">Salesman</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">PHONE</label><input type="text" name="Phone" class="form-control font-mono" value="@Model?.Phone" /></div>
+                <div class="form-group"><label class="form-label">EMAIL</label><input type="email" name="Email" class="form-control" value="@Model?.Email" /></div>
+                <div class="form-group" style="grid-column:span 2;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+                        <input type="checkbox" name="IsActive" value="true" @(Model?.IsActive == true ? "checked" : "") style="width:16px;height:16px;" />
+                        Active (user can log in)
+                    </label>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update User</button>
+                <a href="/Users/Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

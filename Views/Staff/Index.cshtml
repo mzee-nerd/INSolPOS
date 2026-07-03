@@ -1,0 +1,206 @@
+@using INSolPOS.Models
+@model List<Staff>
+@{
+    ViewBag.Title = "Staff Management";
+    ViewBag.NavContext = "staff";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count staff member(s)</div>
+    <div class="flex gap-2">
+        <button onclick="document.getElementById('addStaffModal').classList.add('open')" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add Staff
+        </button>
+        <button onclick="document.getElementById('advanceModal').classList.add('open')" class="btn btn-warning">
+            <i class="fas fa-hand-holding-usd"></i> Give Advance
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Staff Registry</span>
+        <a href="/Staff/Commissions" class="btn btn-secondary btn-sm"><i class="fas fa-percentage"></i> Commissions</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Designation</th>
+                    <th>Phone</th>
+                    <th>CNIC</th>
+                    <th class="text-right">Basic Salary</th>
+                    <th>Joining</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@s.Name</td>
+                        <td><span class="badge badge-accent">@s.Designation</span></td>
+                        <td class="font-mono text-muted">@(s.Phone ?? "—")</td>
+                        <td class="font-mono text-muted text-sm">@(s.CNIC ?? "—")</td>
+                        <td class="text-right font-mono">Rs. @s.BasicSalary.ToString("N0")</td>
+                        <td class="text-muted text-sm">@s.JoiningDate.ToString("dd MMM yy")</td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="/Staff/Edit/@s.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a>
+                                <a href="/Staff/Salaries/@s.Id" class="btn btn-success btn-xs" title="Salaries"><i class="fas fa-money-check"></i></a>
+                                <button onclick="openPaySalary(@s.Id, '@s.Name', @s.BasicSalary)" class="btn btn-primary btn-xs">
+                                    <i class="fas fa-wallet"></i> Pay
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Staff Modal -->
+<div class="modal-backdrop" id="addStaffModal">
+    <div class="modal" style="min-width:520px;">
+        <div class="modal-title"><i class="fas fa-user-plus text-accent" style="margin-right:8px;"></i>Add Staff Member</div>
+        <form method="post" action="/Staff/Create">
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">FULL NAME *</label>
+                    <input type="text" name="Name" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DESIGNATION *</label>
+                    <select name="Designation" class="form-control" required>
+                        <option value="">Select...</option>
+                        <option>Salesman</option>
+                        <option>Driver</option>
+                        <option>Loader</option>
+                        <option>Helper</option>
+                        <option>Cashier</option>
+                        <option>Manager</option>
+                        <option>Accountant</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PHONE</label>
+                    <input type="text" name="Phone" class="form-control font-mono" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">CNIC</label>
+                    <input type="text" name="CNIC" class="form-control font-mono" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">BASIC SALARY *</label>
+                    <input type="number" name="BasicSalary" class="form-control font-mono" required min="0" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">JOINING DATE</label>
+                    <input type="date" name="JoiningDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">ADDRESS</label>
+                    <textarea name="Address" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Staff</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addStaffModal').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Pay Salary Modal -->
+<div class="modal-backdrop" id="paySalaryModal">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-wallet text-green" style="margin-right:8px;"></i>Pay Salary — <span id="salaryStaffName"></span></div>
+        <form method="post" action="/Staff/PaySalary">
+            <input type="hidden" name="staffId" id="salaryStaffId" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">MONTH</label>
+                    <select name="month" class="form-control">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                        @using System.Globalization
+
+                            <option value="@m" selected="@(m == DateTime.UtcNow.Month)">
+                                @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">YEAR</label>
+                    <input type="number" name="year" class="form-control" value="@DateTime.Now.Year" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">BASIC SALARY</label>
+                    <input type="number" id="salaryBasic" class="form-control font-mono" readonly style="opacity:0.6;" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ALLOWANCES</label>
+                    <input type="number" name="allowances" class="form-control font-mono" value="0" min="0" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DEDUCTIONS</label>
+                    <input type="number" name="deductions" class="form-control font-mono" value="0" min="0" />
+                </div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Pay Salary</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('paySalaryModal').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Advance Modal -->
+<div class="modal-backdrop" id="advanceModal">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-hand-holding-usd text-amber" style="margin-right:8px;"></i>Give Advance Salary</div>
+        <form method="post" action="/Staff/GiveAdvance">
+            <div class="form-group mb-4">
+                <label class="form-label">STAFF MEMBER *</label>
+                <select name="staffId" class="form-control" required>
+                    <option value="">Select staff...</option>
+                    @foreach (var s in Model)
+                    {
+                        <option value="@s.Id">@s.Name — @s.Designation</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">AMOUNT (Rs.) *</label>
+                <input type="number" name="amount" class="form-control font-mono" min="0.01" required />
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">REASON</label>
+                <input type="text" name="reason" class="form-control" placeholder="Reason for advance..." />
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-warning"><i class="fas fa-check"></i> Give Advance</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('advanceModal').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openPaySalary(id, name, salary) {
+        document.getElementById('salaryStaffId').value = id;
+        document.getElementById('salaryStaffName').textContent = name;
+        document.getElementById('salaryBasic').value = salary;
+        document.getElementById('paySalaryModal').classList.add('open');
+    }
+    document.querySelectorAll('.modal-backdrop').forEach(el => {
+        el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+    });
+</script>
+}

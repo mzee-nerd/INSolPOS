@@ -1,0 +1,75 @@
+﻿@using INSolPOS.Models
+@model List<Sale>
+@{
+    ViewBag.Title = "New Sale Return";
+    ViewBag.NavContext = "sale-returns";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/SaleReturns/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-search text-amber" style="margin-right:8px;"></i>Select Sale to Return</span>
+        <input type="text" id="searchBox" placeholder="Search by invoice / customer..." class="form-control" style="width:240px;" oninput="filterTable()" />
+    </div>
+    <div class="table-wrap">
+        <table id="saleTable">
+            <thead>
+                <tr>
+                    <th>Invoice No</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Paid</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="font-mono text-accent fw-semibold">@s.InvoiceNo</td>
+                        <td class="text-muted text-sm">@s.SaleDate.ToString("dd MMM yy HH:mm")</td>
+                        <td class="fw-semibold">@(s.Customer?.Name ?? "Walk-in")</td>
+                        <td>
+                            @if (s.SaleType == SaleType.Cash)
+                            {
+                                <span class="badge badge-success">Cash</span>
+                            }
+                            else if (s.SaleType == SaleType.Credit)
+                            {
+                                <span class="badge badge-warning">Credit</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-info">Wholesale</span>
+                            }
+                        </td>
+                        <td class="text-right font-mono">Rs. @s.TotalAmount.ToString("N2")</td>
+                        <td class="text-right font-mono text-green">Rs. @s.PaidAmount.ToString("N2")</td>
+                        <td>
+                            <a href="/SaleReturns/FromSale/@s.Id" class="btn btn-warning btn-sm">
+                                <i class="fas fa-undo"></i> Return
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterTable() {
+            const q = document.getElementById('searchBox').value.toLowerCase();
+            document.querySelectorAll('#saleTable tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+    </script>
+}

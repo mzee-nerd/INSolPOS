@@ -1,0 +1,42 @@
+@using INSolPOS.Models
+@model Customer
+@{
+    ViewBag.Title = "Edit Customer";
+    ViewBag.NavContext = "customers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var routes = ViewBag.Routes as List<SaleRoute> ?? new();
+}
+<div class="flex gap-2 mb-4">
+    <a href="/Customers/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+<div class="card" style="max-width:820px;">
+    <div class="card-header"><span class="card-title"><i class="fas fa-edit text-accent" style="margin-right:8px;"></i>Edit Customer</span></div>
+    <div class="card-body">
+        <form method="post" action="/Customers/Edit">
+            <input type="hidden" name="Id" value="@Model?.Id" />
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:span 2;"><label class="form-label">FULL NAME *</label><input type="text" name="Name" class="form-control" value="@Model?.Name" required /></div>
+                <div class="form-group"><label class="form-label">PHONE</label><input type="text" name="Phone" class="form-control font-mono" value="@Model?.Phone" /></div>
+                <div class="form-group"><label class="form-label">CNIC</label><input type="text" name="CNIC" class="form-control font-mono" value="@Model?.CNIC" /></div>
+                <div class="form-group"><label class="form-label">EMAIL</label><input type="email" name="Email" class="form-control" value="@Model?.Email" /></div>
+                <div class="form-group">
+                    <label class="form-label">SALE ROUTE</label>
+                    <select name="RouteId" class="form-control">
+                        <option value="">— No Route —</option>
+                        @foreach (var r in routes)
+                        {
+                            <option value="@r.Id" selected="@(Model?.RouteId == r.Id)">@r.Name (@r.Area)</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column:span 2;"><label class="form-label">ADDRESS</label><textarea name="Address" class="form-control" rows="2">@Model?.Address</textarea></div>
+                <div class="form-group"><label class="form-label">CREDIT LIMIT (Rs.)</label><input type="number" name="CreditLimit" class="form-control font-mono" value="@Model?.CreditLimit" min="0" step="100" /></div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update</button>
+                <a href="/Customers/Index" class="btn btn-secondary">Cancel</a>
+                <a href="/Customers/Ledger/@Model?.Id" class="btn btn-warning"><i class="fas fa-book"></i> View Ledger</a>
+            </div>
+        </form>
+    </div>
+</div>

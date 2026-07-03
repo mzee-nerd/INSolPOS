@@ -1,0 +1,159 @@
+﻿@using INSolPOS.Models
+@model SaleReturn
+@{
+    ViewBag.Title = "Process Sale Return";
+    ViewBag.NavContext = "sale-returns";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var sale = ViewBag.Sale as Sale;
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/SaleReturns/Create" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+
+    <!-- Items Table -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-undo text-amber" style="margin-right:8px;"></i>Return Items — @sale?.InvoiceNo</span>
+            <span class="badge badge-info">@sale?.SaleDate.ToString("dd MMM yyyy")</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-right">Sold Qty</th>
+                        <th class="text-right">Unit Price</th>
+                        <th class="text-right">Sold Value</th>
+                        <th class="text-right">Return Qty</th>
+                        <th class="text-right">Return Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in sale?.Items ?? new())
+                    {
+                        <tr>
+                            <input type="hidden" name="productIds" value="@item.ProductId" form="returnForm" />
+                            <input type="hidden" name="prices" value="@item.SalePrice" form="returnForm" />
+                            <td>
+                                <div class="fw-semibold">@item.Product?.Name</div>
+                                @if (item.CartonQty > 0)
+                                {
+                                    <div class="text-xs text-muted">@item.CartonQty ctn + @item.LooseQty loose</div>
+                                }
+                            </td>
+                            <td class="text-right font-mono">@item.TotalQty</td>
+                            <td class="text-right font-mono">@item.SalePrice.ToString("N2")</td>
+                            <td class="text-right font-mono">@item.TotalAmount.ToString("N2")</td>
+                            <td class="text-right">
+                                <input type="number" name="quantities" value="0"
+                                       min="0" max="@item.TotalQty" step="0.5" form="returnForm"
+                                       class="form-control font-mono text-right"
+                                       style="width:90px;display:inline-block;"
+                                       oninput="calcReturn(this, @item.SalePrice)" />
+                            </td>
+                            <td class="text-right font-mono fw-semibold text-red" id="rv_@item.ProductId">0.00</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="background:var(--c-surface2);font-weight:700;">
+                        <td colspan="3">TOTAL</td>
+                        <td class="text-right font-mono">Rs. @(sale?.Items.Sum(i => i.TotalAmount).ToString("N2") ?? "0.00")</td>
+                        <td></td>
+                        <td class="text-right font-mono text-red" id="totalReturnVal">Rs. 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right: Summary + submit -->
+    <div style="position:sticky;top:80px;">
+        <div class="card mb-4">
+            <div class="card-header"><span class="card-title">Original Sale</span></div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                    <div class="flex justify-between"><span class="text-muted">Invoice</span><span class="font-mono fw-bold text-accent">@sale?.InvoiceNo</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Customer</span><span class="fw-semibold">@(sale?.Customer?.Name ?? "Walk-in")</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Date</span><span class="font-mono">@sale?.SaleDate.ToString("dd MMM yy")</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Total</span><span class="font-mono fw-bold">Rs. @sale?.TotalAmount.ToString("N2")</span></div>
+                    <div class="flex justify-between">
+                        <span class="text-muted">Type</span>
+                        <span>
+                            @if (sale?.SaleType == SaleType.Credit)
+                            {
+                                <span class="badge badge-warning">Credit</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-success">Cash</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span class="card-title">Return Summary</span></div>
+            <div class="card-body">
+                <form method="post" action="/SaleReturns/FromSale" id="returnForm">
+                    <input type="hidden" name="SaleId" value="@sale?.Id" />
+
+                    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;margin-bottom:16px;">
+                        <div class="flex justify-between">
+                            <span style="font-weight:700;font-size:14px;">Return Total</span>
+                            <span class="font-mono fw-bold text-red" style="font-size:20px;" id="summaryTotal">Rs. 0.00</span>
+                        </div>
+                        <div class="text-xs text-muted mt-2">Stock will be restored for returned quantities.</div>
+                        @if (sale?.IsCredit == true)
+                        {
+                            <div class="text-xs text-green mt-1">
+                                <i class="fas fa-info-circle"></i> Customer ledger will be credited automatically.
+                            </div>
+                        }
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="form-label">REASON FOR RETURN *</label>
+                        <textarea name="Reason" class="form-control" rows="3"
+                                  placeholder="Describe the reason (damaged, wrong item, quality issue, etc.)" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-full" style="justify-content:center;font-size:14px;padding:12px;">
+                        <i class="fas fa-undo"></i> Process Return
+                    </button>
+                    <a href="/SaleReturns/Create" class="btn btn-secondary w-full" style="justify-content:center;margin-top:8px;">
+                        Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function calcReturn(input, price) {
+            const qty = parseFloat(input.value) || 0;
+            const val = qty * price;
+            const productId = input.closest('tr').querySelector('[name="productIds"]')?.value;
+            const el = document.getElementById('rv_' + productId);
+            if (el) el.textContent = val.toFixed(2);
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            document.querySelectorAll('[id^="rv_"]').forEach(el => {
+                total += parseFloat(el.textContent) || 0;
+            });
+            const fmt = 'Rs. ' + total.toFixed(2);
+            document.getElementById('totalReturnVal').textContent = fmt;
+            document.getElementById('summaryTotal').textContent   = fmt;
+        }
+    </script>
+}

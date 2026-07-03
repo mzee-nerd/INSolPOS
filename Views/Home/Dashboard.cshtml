@@ -1,0 +1,178 @@
+@using INSolPOS.Services
+@model object
+@{
+    ViewBag.Title = "Dashboard";
+    ViewBag.NavContext = "dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var stats = ViewBag.Stats as DashboardStats;
+}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Today's Sales</span>
+            <div class="stat-icon" style="background:rgba(79,110,247,0.15);color:var(--c-accent);">
+                <i class="fas fa-cash-register"></i>
+            </div>
+        </div>
+        <div class="stat-value text-accent font-mono">Rs.@((stats?.TodaySales ?? 0).ToString("N0"))</div>
+        <div class="stat-change">Month: Rs.@((stats?.MonthSales ?? 0).ToString("N0"))</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Today's Purchases</span>
+            <div class="stat-icon" style="background:rgba(168,85,247,0.15);color:var(--c-purple);">
+                <i class="fas fa-truck-loading"></i>
+            </div>
+        </div>
+        <div class="stat-value font-mono" style="color:var(--c-purple);">Rs.@((stats?.TodayPurchases ?? 0).ToString("N0"))</div>
+        <div class="stat-change">Month: Rs.@((stats?.MonthPurchases ?? 0).ToString("N0"))</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Receivables</span>
+            <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--c-amber);">
+                <i class="fas fa-hand-holding-usd"></i>
+            </div>
+        </div>
+        <div class="stat-value font-mono text-amber">Rs.@((stats?.PendingReceivables ?? 0).ToString("N0"))</div>
+        <div class="stat-change">Pending credit dues</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Total Customers</span>
+            <div class="stat-icon" style="background:rgba(34,197,94,0.15);color:var(--c-green);">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+        <div class="stat-value font-mono text-green">@(stats?.TotalCustomers ?? 0)</div>
+        <div class="stat-change">@(stats?.TotalVendors ?? 0) vendors registered</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Products</span>
+            <div class="stat-icon" style="background:rgba(6,182,212,0.15);color:var(--c-cyan);">
+                <i class="fas fa-boxes"></i>
+            </div>
+        </div>
+        <div class="stat-value font-mono" style="color:var(--c-cyan);">@(stats?.TotalProducts ?? 0)</div>
+        <div class="stat-change @((stats?.LowStockCount ?? 0) > 0 ? "down" : "")">
+            @if ((stats?.LowStockCount ?? 0) > 0)
+            {
+                <i class="fas fa-exclamation-triangle"></i>
+            }
+            @(stats?.LowStockCount ?? 0) low stock items
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Quick Action</span>
+            <div class="stat-icon" style="background:rgba(79,110,247,0.1);color:var(--c-accent);">
+                <i class="fas fa-bolt"></i>
+            </div>
+        </div>
+        <a href="/Sales/NewSale" class="btn btn-primary w-full" style="justify-content:center;margin-top:4px;">
+            <i class="fas fa-plus"></i> New Sale
+        </a>
+    </div>
+</div>
+
+<div class="flex gap-4 mb-4" style="flex-wrap:wrap;">
+    <!-- Alerts -->
+    <div style="flex:1;min-width:280px;">
+        @{var lowStock = ViewBag.LowStock as List<INSolPOS.Models.Product>;}
+        @if (lowStock?.Count > 0)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span class="card-title"><i class="fas fa-exclamation-triangle text-amber" style="margin-right:6px;"></i>Low Stock Alert</span>
+                    <span class="badge badge-warning">@lowStock.Count items</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Product</th><th>Stock</th><th>Min</th></tr></thead>
+                        <tbody>
+                        @foreach (var p in lowStock.Take(8))
+                        {
+                            <tr>
+                                <td>@p.Name</td>
+                                <td class="font-mono @(p.CurrentStock == 0 ? "text-red" : "text-amber")">@p.CurrentStock</td>
+                                <td class="font-mono text-muted">@p.MinStockLevel</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @{var expiring = ViewBag.Expiring as List<INSolPOS.Models.Product>;}
+        @if (expiring?.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title"><i class="fas fa-calendar-times text-red" style="margin-right:6px;"></i>Expiring Soon</span>
+                    <span class="badge badge-danger">@expiring.Count items</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Product</th><th>Batch</th><th>Expiry</th></tr></thead>
+                        <tbody>
+                        @foreach (var p in expiring.Take(6))
+                        {
+                            <tr>
+                                <td>@p.Name</td>
+                                <td class="font-mono text-muted">@(p.BatchNo ?? "-")</td>
+                                <td class="font-mono @(p.ExpiryDate < DateTime.Now ? "text-red" : "text-amber")">
+                                    @p.ExpiryDate?.ToString("dd MMM yyyy")
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Quick Links -->
+    <div style="flex:1;min-width:280px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Quick Access</span></div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    @{
+                        var links = new[] {
+                            ("/Sales/NewSale", "fa-cash-register", "New Sale", "#4f6ef7"),
+                            ("/Purchases/Create", "fa-truck-loading", "New Purchase", "#a855f7"),
+                            ("/Customers/Create", "fa-user-plus", "Add Customer", "#22c55e"),
+                            ("/Products/Create", "fa-plus-square", "Add Product", "#06b6d4"),
+                            ("/Reports/ProfitLoss", "fa-chart-bar", "P&L Report", "#f59e0b"),
+                            ("/Reports/TrialBalance", "fa-balance-scale", "Trial Balance", "#ef4444"),
+                        };
+                        foreach (var (url, icon, label, color) in links)
+                        {
+                            <a href="@url" style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:8px;color:var(--c-text);font-size:13px;font-weight:600;transition:all 0.15s;text-decoration:none;"
+                               onmouseover="this.style.borderColor='@color'" onmouseout="this.style.borderColor='var(--c-border)'">
+                                <i class="fas @icon" style="color:@color;font-size:16px;width:20px;text-align:center;"></i>
+                                @label
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header"><span class="card-title">System Info</span></div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                    <div class="flex justify-between"><span class="text-muted">Date</span> <span class="font-mono">@DateTime.Now.ToString("dd MMM yyyy")</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Logged in as</span> <span class="badge badge-accent">@ViewBag.CurrentRoleName</span></div>
+                    <div class="flex justify-between"><span class="text-muted">User</span> <span>@ViewBag.CurrentUserName</span></div>
+                    <div class="flex justify-between"><span class="text-muted">Version</span> <span class="badge badge-info">INSol POS v1.0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

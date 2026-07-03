@@ -1,0 +1,62 @@
+@using INSolPOS.Models
+@model SaleReturn
+@{
+    ViewBag.Title = "Sale Return";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var sale = ViewBag.Sale as Sale;
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/Sales/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="card" style="max-width:800px;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-undo text-amber" style="margin-right:8px;"></i>Sale Return — @sale?.InvoiceNo</span>
+        <span class="badge badge-warning">@sale?.SaleDate.ToString("dd MMM yyyy")</span>
+    </div>
+    <div class="card-body">
+        <form method="post" action="/Sales/Return">
+            <input type="hidden" name="SaleId" value="@sale?.Id" />
+
+            <div class="form-group mb-4">
+                <label class="form-label">REASON FOR RETURN</label>
+                <textarea name="Reason" class="form-control" placeholder="Describe the reason..." required></textarea>
+            </div>
+
+            <div class="table-wrap mb-4">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-right">Sold Qty</th>
+                            <th class="text-right">Price</th>
+                            <th class="text-right">Return Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in sale?.Items ?? new())
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.Product?.Name</td>
+                                <td class="text-right font-mono">@item.TotalQty</td>
+                                <td class="text-right font-mono">@item.SalePrice.ToString("N2")</td>
+                                <td class="text-right">
+                                    <input type="hidden" name="productIds" value="@item.ProductId" />
+                                    <input type="hidden" name="prices" value="@item.SalePrice" />
+                                    <input type="number" name="quantities" value="0" min="0" max="@item.TotalQty" step="0.5"
+                                        class="form-control font-mono" style="width:80px;text-align:right;display:inline-block;" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-warning"><i class="fas fa-undo"></i> Process Return</button>
+                <a href="/Sales/Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

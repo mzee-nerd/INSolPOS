@@ -1,0 +1,136 @@
+@using INSolPOS.Models
+@model Product
+@{
+    bool isEdit = Model?.Id > 0;
+    ViewBag.Title = isEdit ? "Edit Product" : "Add Product";
+    ViewBag.NavContext = "products";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var categories = ViewBag.Categories as List<Category> ?? new();
+    var units = ViewBag.Units as List<Unit> ?? new();
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/Products/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Products</a>
+</div>
+
+<div class="card" style="max-width:900px;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-@(isEdit ? "edit" : "plus-circle") text-accent" style="margin-right:8px;"></i>@ViewBag.Title</span>
+    </div>
+    <div class="card-body">
+        <form method="post" action="/Products/@(isEdit ? "Edit" : "Create")">
+            @if (isEdit) { <input type="hidden" name="Id" value="@Model!.Id" /> }
+
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">PRODUCT NAME *</label>
+                    <input type="text" name="Name" class="form-control" value="@Model?.Name" required placeholder="Enter product name" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">BARCODE</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" name="Barcode" id="barcodeInput" class="form-control font-mono" value="@Model?.Barcode" placeholder="Auto-generate or enter" />
+                        <button type="button" class="btn btn-secondary" onclick="genBarcode()"><i class="fas fa-barcode"></i></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CATEGORY *</label>
+                    <select name="CategoryId" class="form-control" required>
+                        <option value="">Select category...</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c.Id" selected="@(Model?.CategoryId == c.Id)">@c.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">BASE UNIT *</label>
+                    <select name="UnitId" class="form-control" required>
+                        <option value="">Select unit...</option>
+                        @foreach (var u in units)
+                        {
+                            <option value="@u.Id" selected="@(Model?.UnitId == u.Id)">@u.Name (@u.Abbreviation)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CARTON QTY (pcs per carton)</label>
+                    <input type="number" name="CartonQty" class="form-control" value="@(Model?.CartonQty ?? 1)" min="1" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">PURCHASE PRICE (Rs.) *</label>
+                    <input type="number" name="PurchasePrice" class="form-control font-mono" value="@Model?.PurchasePrice" min="0" step="0.01" required />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">SALE PRICE (Rs.) *</label>
+                    <input type="number" name="SalePrice" class="form-control font-mono" value="@Model?.SalePrice" min="0" step="0.01" required />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">WHOLESALE PRICE (Rs.)</label>
+                    <input type="number" name="WholesalePrice" class="form-control font-mono" value="@Model?.WholesalePrice" min="0" step="0.01" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">COMMISSION % (for salesman)</label>
+                    <input type="number" name="CommissionPercentage" class="form-control font-mono" value="@Model?.CommissionPercentage" min="0" max="100" step="0.01" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">MIN STOCK LEVEL (alert below this)</label>
+                    <input type="number" name="MinStockLevel" class="form-control font-mono" value="@Model?.MinStockLevel" min="0" step="0.5" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">BATCH NO</label>
+                    <input type="text" name="BatchNo" class="form-control font-mono" value="@Model?.BatchNo" placeholder="e.g. BT-2024-001" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">EXPIRY DATE</label>
+                    <input type="date" name="ExpiryDate" class="form-control" value="@Model?.ExpiryDate?.ToString("yyyy-MM-dd")" />
+                </div>
+
+                @if (!isEdit)
+                {
+                    <div class="form-group">
+                        <label class="form-label">OPENING STOCK</label>
+                        <input type="number" name="CurrentStock" class="form-control font-mono" value="0" min="0" step="0.5" />
+                    </div>
+                }
+
+                <div class="form-group" style="grid-column:span 2;">
+                    <div style="display:flex;gap:20px;align-items:center;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+                            <input type="checkbox" name="TrackExpiry" value="true" @(Model?.TrackExpiry == true ? "checked" : "") style="width:16px;height:16px;" />
+                            Track expiry for this product
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+                            <input type="checkbox" name="IsActive" value="true" @(Model == null || Model.IsActive ? "checked" : "") style="width:16px;height:16px;" />
+                            Active
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> @(isEdit ? "Update" : "Save") Product</button>
+                <a href="/Products/Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function genBarcode() {
+        document.getElementById('barcodeInput').value = 'PRD' + Date.now().toString().slice(-10);
+    }
+</script>
+}

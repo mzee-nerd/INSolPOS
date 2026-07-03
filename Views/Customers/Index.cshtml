@@ -1,0 +1,64 @@
+@using INSolPOS.Models
+@model List<Customer>
+@{
+    ViewBag.Title = "Customers";
+    ViewBag.NavContext = "customers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count active customer(s)</div>
+    <a href="/Customers/Create" class="btn btn-primary"><i class="fas fa-user-plus"></i> Register Customer</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Customer Registry</span>
+        <input type="text" id="searchBox" placeholder="Search customers..." class="form-control" style="width:220px;" oninput="filterTable()" />
+    </div>
+    <div class="table-wrap">
+        <table id="custTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>CNIC</th>
+                    <th>Route</th>
+                    <th class="text-right">Credit Limit</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@c.Name</td>
+                        <td class="font-mono text-muted">@(c.Phone ?? "—")</td>
+                        <td class="font-mono text-muted text-sm">@(c.CNIC ?? "—")</td>
+                        <td><span class="badge badge-info">@(c.Route?.Name ?? "—")</span></td>
+                        <td class="text-right font-mono">@c.CreditLimit.ToString("N0")</td>
+                        <td class="text-muted text-sm">@c.RegisteredAt.ToString("dd MMM yy")</td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="/Customers/Edit/@c.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a>
+                                <a href="/Customers/Ledger/@c.Id" class="btn btn-warning btn-xs" title="Ledger"><i class="fas fa-book"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function filterTable() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        document.querySelectorAll('#custTable tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+</script>
+}

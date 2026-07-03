@@ -1,0 +1,89 @@
+@using INSolPOS.Models
+@model List<Product>
+@{
+    ViewBag.Title = "Stock Report";
+    ViewBag.NavContext = "stock";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4 no-print">
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin:0;">
+        <div class="stat-card" style="padding:12px 16px;">
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value font-mono text-accent" style="font-size:22px;">@Model.Count</div>
+        </div>
+        <div class="stat-card" style="padding:12px 16px;">
+            <div class="stat-label">Total Stock Value</div>
+            <div class="stat-value font-mono text-green" style="font-size:18px;">Rs. @Model.Sum(p => p.CurrentStock * p.PurchasePrice).ToString("N0")</div>
+        </div>
+        <div class="stat-card" style="padding:12px 16px;">
+            <div class="stat-label">Low Stock Items</div>
+            <div class="stat-value font-mono text-amber" style="font-size:22px;">@Model.Count(p => p.CurrentStock <= p.MinStockLevel)</div>
+        </div>
+    </div>
+    <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Stock Report — @DateTime.Now.ToString("dd MMM yyyy")</span>
+        <input type="text" id="searchBox" placeholder="Filter..." class="form-control" style="width:180px;" oninput="filterTable()" />
+    </div>
+    <div class="table-wrap">
+        <table id="stockTable">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Batch</th>
+                    <th class="text-right">Purchase Price</th>
+                    <th class="text-right">Sale Price</th>
+                    <th class="text-right">Current Stock</th>
+                    <th class="text-right">Min Level</th>
+                    <th class="text-right">Stock Value</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@p.Name</td>
+                        <td><span class="badge badge-info">@(p.Category?.Name ?? "—")</span></td>
+                        <td class="font-mono text-muted text-sm">@(p.BatchNo ?? "—")</td>
+                        <td class="text-right font-mono">@p.PurchasePrice.ToString("N2")</td>
+                        <td class="text-right font-mono text-accent">@p.SalePrice.ToString("N2")</td>
+                        <td class="text-right font-mono fw-bold @(p.CurrentStock == 0 ? "text-red" : p.CurrentStock <= p.MinStockLevel ? "text-amber" : "text-green")">
+                            @p.CurrentStock.ToString("N2")
+                        </td>
+                        <td class="text-right font-mono text-muted">@p.MinStockLevel.ToString("N2")</td>
+                        <td class="text-right font-mono">Rs. @((p.CurrentStock * p.PurchasePrice).ToString("N2"))</td>
+                        <td>
+                            @if (p.CurrentStock == 0) { <span class="badge badge-danger">Out of Stock</span> }
+                            else if (p.CurrentStock <= p.MinStockLevel) { <span class="badge badge-warning">Low Stock</span> }
+                            else { <span class="badge badge-success">In Stock</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr style="background:var(--c-surface2);font-weight:700;">
+                    <td colspan="7">TOTAL INVENTORY VALUE</td>
+                    <td class="text-right font-mono text-accent">Rs. @Model.Sum(p => p.CurrentStock * p.PurchasePrice).ToString("N2")</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function filterTable() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        document.querySelectorAll('#stockTable tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+</script>
+}

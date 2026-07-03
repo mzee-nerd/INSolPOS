@@ -1,0 +1,71 @@
+@using INSolPOS.Models
+@model VehicleLoad
+@{
+    ViewBag.Title = "Unload Vehicle";
+    ViewBag.NavContext = "vehicles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="flex gap-2 mb-4">
+    <a href="/Vehicles/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="card" style="max-width:900px;">
+    <div class="card-header">
+        <span class="card-title">
+            <i class="fas fa-truck text-warning" style="margin-right:8px;"></i>
+            Unload Vehicle — @Model.Vehicle?.VehicleNo
+        </span>
+        <span class="badge badge-warning">Loaded: @Model.LoadDate.ToString("dd MMM yyyy HH:mm")</span>
+    </div>
+    <div class="card-body">
+        <form method="post" action="/Vehicles/UnloadVehicle">
+            <input type="hidden" name="loadId" value="@Model.Id" />
+            <div class="table-wrap mb-4">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-right">Loaded Qty</th>
+                            <th class="text-right">Return Qty (Unsold)</th>
+                            <th class="text-right">Sold Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <input type="hidden" name="itemIds" value="@item.Id" />
+                                <td class="fw-semibold">@item.Product?.Name</td>
+                                <td class="text-right font-mono">@item.LoadedQty</td>
+                                <td class="text-right">
+                                    <input type="number" name="unloadedQtys" value="0" min="0" max="@item.LoadedQty" step="0.5"
+                                        class="form-control font-mono text-right" style="width:100px;display:inline-block;"
+                                        oninput="calcSold(this, @item.LoadedQty)" id="uqty_@item.Id" />
+                                </td>
+                                <td class="text-right font-mono fw-bold text-green" id="sold_@item.Id">@item.LoadedQty</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-warning"><i class="fas fa-check"></i> Confirm Unload</button>
+                <a href="/Vehicles/Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function calcSold(input, loaded) {
+        const returned = parseFloat(input.value) || 0;
+        const sold = loaded - returned;
+        const soldEl = input.closest('tr').querySelector('[id^="sold_"]');
+        if (soldEl) {
+            soldEl.textContent = sold.toFixed(2);
+            soldEl.className = 'text-right font-mono fw-bold ' + (sold > 0 ? 'text-green' : 'text-muted');
+        }
+    }
+</script>
+}

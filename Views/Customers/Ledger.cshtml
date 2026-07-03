@@ -1,0 +1,129 @@
+@using INSolPOS.Models
+@model List<CustomerLedger>
+@{
+    ViewBag.Title = "Customer Ledger";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var customer = ViewBag.Customer as Customer;
+    var balance = (decimal)(ViewBag.Balance ?? 0m);
+}
+
+<div class="flex justify-between items-center mb-4">
+    <a href="/Customers/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+    <div class="flex gap-2">
+        <button onclick="window.print()" class="btn btn-secondary btn-sm no-print"><i class="fas fa-print"></i> Print</button>
+        <button onclick="document.getElementById('payModal').classList.add('open')" class="btn btn-success btn-sm no-print">
+            <i class="fas fa-money-bill-wave"></i> Receive Payment
+        </button>
+    </div>
+</div>
+
+<!-- Customer Info Card -->
+<div class="card mb-4">
+    <div class="card-body" style="padding:16px 20px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;align-items:center;">
+            <div>
+                <div class="text-xs text-muted mb-1">CUSTOMER</div>
+                <div class="fw-bold" style="font-size:16px;">@customer?.Name</div>
+                <div class="text-muted text-sm">@customer?.Phone</div>
+            </div>
+            <div>
+                <div class="text-xs text-muted mb-1">ADDRESS</div>
+                <div class="text-sm">@(customer?.Address ?? "—")</div>
+            </div>
+            <div>
+                <div class="text-xs text-muted mb-1">CNIC</div>
+                <div class="font-mono text-sm">@(customer?.CNIC ?? "—")</div>
+            </div>
+            <div>
+                <div class="text-xs text-muted mb-1">CREDIT LIMIT</div>
+                <div class="font-mono fw-semibold">Rs. @customer?.CreditLimit.ToString("N2")</div>
+            </div>
+            <div>
+                <div class="text-xs text-muted mb-1">CURRENT BALANCE</div>
+                <div class="font-mono fw-bold @(balance > 0 ? "text-red" : "text-green")" style="font-size:18px;">
+                    Rs. @Math.Abs(balance).ToString("N2")
+                    <span class="text-xs @(balance > 0 ? "text-red" : "text-green")">(@(balance > 0 ? "Receivable" : balance < 0 ? "Payable" : "Settled"))</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ledger Table -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-book text-accent" style="margin-right:8px;"></i>Account Ledger</span>
+        <span class="badge badge-info">@Model.Count entries</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Ref Type</th>
+                    <th class="text-right">Debit (Sale)</th>
+                    <th class="text-right">Credit (Payment)</th>
+                    <th class="text-right">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in Model)
+                {
+                    <tr>
+                        <td class="font-mono text-muted text-sm">@entry.Date.ToString("dd MMM yy HH:mm")</td>
+                        <td>@entry.Description</td>
+                        <td><span class="badge @(entry.ReferenceType == "Payment" ? "badge-success" : entry.ReferenceType == "Sale" ? "badge-warning" : "badge-info")">@entry.ReferenceType</span></td>
+                        <td class="text-right font-mono @(entry.Debit > 0 ? "text-red" : "text-muted")">
+                            @(entry.Debit > 0 ? entry.Debit.ToString("N2") : "—")
+                        </td>
+                        <td class="text-right font-mono @(entry.Credit > 0 ? "text-green" : "text-muted")">
+                            @(entry.Credit > 0 ? entry.Credit.ToString("N2") : "—")
+                        </td>
+                        <td class="text-right font-mono fw-semibold @(entry.Balance > 0 ? "text-amber" : "text-green")">
+                            @entry.Balance.ToString("N2")
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--c-text3);">No ledger entries found.</td></tr>
+                }
+            </tbody>
+            @if (Model.Any())
+            {
+                <tfoot>
+                    <tr style="background:var(--c-surface2);font-weight:700;">
+                        <td colspan="3">TOTALS</td>
+                        <td class="text-right font-mono text-red">@Model.Sum(l => l.Debit).ToString("N2")</td>
+                        <td class="text-right font-mono text-green">@Model.Sum(l => l.Credit).ToString("N2")</td>
+                        <td class="text-right font-mono @(balance > 0 ? "text-amber" : "text-green")">@balance.ToString("N2")</td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-backdrop no-print" id="payModal">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-money-bill-wave text-green" style="margin-right:8px;"></i>Receive Payment</div>
+        <form method="post" action="/Customers/AddPayment">
+            <input type="hidden" name="customerId" value="@customer?.Id" />
+            <div class="form-group mb-4">
+                <label class="form-label">AMOUNT (Rs.) *</label>
+                <input type="number" name="amount" class="form-control font-mono" min="0.01" step="0.01"
+                       value="@(balance > 0 ? balance.ToString("F2") : "0")" required style="font-size:20px;" />
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">NOTES</label>
+                <input type="text" name="notes" class="form-control" placeholder="Payment reference, cheque no, etc." />
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Payment</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('payModal').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

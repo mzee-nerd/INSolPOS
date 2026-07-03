@@ -1,0 +1,80 @@
+@using INSolPOS.Models
+@model List<Product>
+@{
+    ViewBag.Title = "Products";
+    ViewBag.NavContext = "products";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <div class="flex gap-2">
+        <a href="/Products/Categories" class="btn btn-secondary btn-sm"><i class="fas fa-tags"></i> Categories</a>
+        <a href="/Products/Units" class="btn btn-secondary btn-sm"><i class="fas fa-weight"></i> Units</a>
+    </div>
+    <a href="/Products/Create" class="btn btn-primary"><i class="fas fa-plus"></i> Add Product</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Products (@Model.Count)</span>
+        <input type="text" id="searchBox" placeholder="Search products..." class="form-control" style="width:220px;" oninput="filterTable()" />
+    </div>
+    <div class="table-wrap">
+        <table id="prodTable">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Barcode</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th class="text-right">Purchase</th>
+                    <th class="text-right">Sale</th>
+                    <th class="text-right">Commission%</th>
+                    <th class="text-right">Stock</th>
+                    <th>Expiry</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@p.Name</div>
+                            @if (!string.IsNullOrEmpty(p.BatchNo))
+                            {
+                                <div class="text-xs text-muted">Batch: @p.BatchNo</div>
+                            }
+                        </td>
+                        <td class="font-mono text-muted text-sm">@(p.Barcode ?? "—")</td>
+                        <td><span class="badge badge-info">@(p.Category?.Name ?? "—")</span></td>
+                        <td class="text-muted">@(p.Unit?.Name ?? "—")</td>
+                        <td class="text-right font-mono">@p.PurchasePrice.ToString("N2")</td>
+                        <td class="text-right font-mono text-accent fw-semibold">@p.SalePrice.ToString("N2")</td>
+                        <td class="text-right font-mono text-purple">@p.CommissionPercentage.ToString("N1")%</td>
+                        <td class="text-right font-mono @(p.CurrentStock <= p.MinStockLevel ? (p.CurrentStock == 0 ? "text-red" : "text-amber") : "text-green")">
+                            @p.CurrentStock.ToString("N2")
+                        </td>
+                        <td class="font-mono text-sm @(p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now ? "text-red" : p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now.AddDays(30) ? "text-amber" : "text-muted")">
+                            @(p.ExpiryDate?.ToString("dd MMM yy") ?? "—")
+                        </td>
+                        <td>
+                            <a href="/Products/Edit/@p.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function filterTable() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        document.querySelectorAll('#prodTable tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+</script>
+}

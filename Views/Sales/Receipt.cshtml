@@ -1,0 +1,141 @@
+@using INSolPOS.Models
+@model Sale
+@{
+    ViewBag.Title = "Sale Receipt";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4 no-print">
+    <div class="flex gap-2">
+        <a href="/Sales/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+        <a href="/Sales/NewSale" class="btn btn-primary"><i class="fas fa-plus"></i> New Sale</a>
+    </div>
+    <button onclick="window.print()" class="btn btn-success"><i class="fas fa-print"></i> Print Receipt</button>
+</div>
+
+<div style="max-width:600px;margin:0 auto;">
+    <div class="card receipt-print">
+        <div style="text-align:center;padding:24px 24px 16px;border-bottom:1px solid var(--c-border);">
+            <div style="font-size:22px;font-weight:800;color:var(--c-accent);">INSol POS</div>
+            <div style="font-size:12px;color:var(--c-text3);margin-top:4px;">Sales Receipt</div>
+        </div>
+
+        <div style="padding:16px 24px;border-bottom:1px solid var(--c-border);">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                <div>
+                    <div class="text-muted text-xs">INVOICE NO</div>
+                    <div class="font-mono fw-bold text-accent">@Model.InvoiceNo</div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">DATE</div>
+                    <div class="font-mono">@Model.SaleDate.ToString("dd MMM yyyy HH:mm")</div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">CUSTOMER</div>
+                    <div class="fw-semibold">@(Model.Customer?.Name ?? "Walk-in")</div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">SALE TYPE</div>
+                    <div>
+                        @if (Model.SaleType == SaleType.Cash)
+                        { <span class="badge badge-success">Cash</span> }
+                        else if (Model.SaleType == SaleType.Credit)
+                        { <span class="badge badge-warning">Credit</span> }
+                        else
+                        { <span class="badge badge-info">Wholesale</span> }
+                    </div>
+                </div>
+                @if (Model.Staff != null)
+                {
+                    <div>
+                        <div class="text-muted text-xs">SALESMAN</div>
+                        <div>@Model.Staff.Name</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th class="text-right">Qty</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int row = 1; }
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td class="text-muted text-xs">@(row++)</td>
+                            <td>
+                                <div class="fw-semibold" style="font-size:13px;">@item.Product?.Name</div>
+                                @if (item.CartonQty > 0)
+                                {
+                                    <div class="text-xs text-muted">@item.CartonQty Ctn + @item.LooseQty Loose</div>
+                                }
+                            </td>
+                            <td class="text-right font-mono">@item.TotalQty</td>
+                            <td class="text-right font-mono">@item.SalePrice.ToString("N2")</td>
+                            <td class="text-right font-mono fw-semibold">@item.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding:16px 24px;border-top:1px solid var(--c-border);">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                <div class="flex justify-between">
+                    <span class="text-muted">Sub Total</span>
+                    <span class="font-mono">Rs. @Model.SubTotal.ToString("N2")</span>
+                </div>
+                @if (Model.Discount > 0)
+                {
+                    <div class="flex justify-between">
+                        <span class="text-muted">Discount</span>
+                        <span class="font-mono text-red">- Rs. @Model.Discount.ToString("N2")</span>
+                    </div>
+                }
+                @if (Model.Tax > 0)
+                {
+                    <div class="flex justify-between">
+                        <span class="text-muted">Tax</span>
+                        <span class="font-mono">Rs. @Model.Tax.ToString("N2")</span>
+                    </div>
+                }
+                <div class="flex justify-between" style="border-top:1px solid var(--c-border);padding-top:10px;margin-top:4px;">
+                    <span style="font-size:15px;font-weight:800;">TOTAL</span>
+                    <span class="font-mono fw-bold text-accent" style="font-size:18px;">Rs. @Model.TotalAmount.ToString("N2")</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted">Paid</span>
+                    <span class="font-mono text-green">Rs. @Model.PaidAmount.ToString("N2")</span>
+                </div>
+                @if (Model.DueAmount > 0)
+                {
+                    <div class="flex justify-between">
+                        <span class="text-muted">Due</span>
+                        <span class="font-mono text-amber fw-bold">Rs. @Model.DueAmount.ToString("N2")</span>
+                    </div>
+                }
+                else if (Model.PaidAmount > Model.TotalAmount)
+                {
+                    <div class="flex justify-between">
+                        <span class="text-muted">Change</span>
+                        <span class="font-mono text-green fw-bold">Rs. @((Model.PaidAmount - Model.TotalAmount).ToString("N2"))</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div style="text-align:center;padding:16px 24px;border-top:1px solid var(--c-border);color:var(--c-text3);font-size:12px;">
+            Thank you for your business!<br/>
+            <span class="font-mono" style="font-size:11px;">@Model.InvoiceNo</span>
+        </div>
+    </div>
+</div>

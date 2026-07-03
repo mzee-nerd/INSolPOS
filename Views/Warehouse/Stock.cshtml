@@ -1,0 +1,54 @@
+@using INSolPOS.Models
+@model List<WarehouseStock>
+@{
+    ViewBag.Title = "Warehouse Stock";
+    ViewBag.NavContext = "warehouse";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var warehouse = ViewBag.Warehouse as Warehouse;
+}
+<div class="flex justify-between items-center mb-4">
+    <a href="/Warehouse/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="/Warehouse/Transfer" class="btn btn-primary"><i class="fas fa-exchange-alt"></i> Transfer Stock</a>
+</div>
+
+<div class="card mb-4" style="max-width:400px;">
+    <div class="card-body">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:46px;height:46px;background:rgba(79,110,247,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--c-accent);">
+                <i class="fas fa-warehouse"></i>
+            </div>
+            <div>
+                <div class="fw-bold" style="font-size:16px;">@warehouse?.Name</div>
+                <div class="text-muted text-sm">@(warehouse?.Location ?? "No location")</div>
+                <div class="text-muted text-sm">Manager: @(warehouse?.ManagerName ?? "—")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Stock Inventory</span>
+        <span class="badge badge-accent">@Model.Count products</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Product</th><th class="text-right">Quantity</th><th class="text-right">Cartons</th><th class="text-right">Stock Value</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@s.Product?.Name</td>
+                        <td class="text-right font-mono @(s.Quantity == 0 ? "text-red" : "text-green")">@s.Quantity.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">@s.CartonQty.ToString("N2")</td>
+                        <td class="text-right font-mono">Rs. @((s.Quantity * (s.Product?.PurchasePrice ?? 0)).ToString("N2"))</td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--c-text3);">No stock in this warehouse.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,120 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — INSol POS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --c-bg: #0d0f14; --c-surface: #13161e; --c-surface2: #1a1e28;
+            --c-border: #232736; --c-accent: #4f6ef7; --c-accent-glow: rgba(79,110,247,0.18);
+            --c-text: #e8eaf2; --c-text2: #9299b0; --c-text3: #5a6180;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--c-bg); color: var(--c-text);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .bg-glow {
+            position: absolute; width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(79,110,247,0.12) 0%, transparent 70%);
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .login-card {
+            background: var(--c-surface); border: 1px solid var(--c-border);
+            border-radius: 20px; padding: 48px 40px; width: 420px; max-width: 95vw;
+            position: relative; z-index: 1;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+        }
+        .logo {
+            display: flex; align-items: center; gap: 14px; margin-bottom: 36px;
+            justify-content: center;
+        }
+        .logo-icon {
+            width: 52px; height: 52px; background: var(--c-accent); border-radius: 14px;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            box-shadow: 0 0 30px var(--c-accent-glow);
+        }
+        .logo-text { font-size: 28px; font-weight: 800; }
+        .logo-sub { font-size: 12px; color: var(--c-text3); letter-spacing: 0.1em; text-transform: uppercase; }
+        h2 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+        .subtitle { text-align: center; color: var(--c-text2); font-size: 14px; margin-bottom: 32px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 12px; font-weight: 700; color: var(--c-text2); margin-bottom: 8px; letter-spacing: 0.04em; }
+        .input-wrap { position: relative; }
+        .input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--c-text3); font-size: 14px; }
+        input[type="text"], input[type="password"] {
+            width: 100%; background: var(--c-surface2); border: 1px solid var(--c-border);
+            border-radius: 10px; padding: 12px 14px 12px 42px; color: var(--c-text);
+            font-size: 14px; font-family: inherit; transition: border-color 0.15s;
+        }
+        input:focus { outline: none; border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-glow); }
+        .btn-login {
+            width: 100%; background: var(--c-accent); color: white; border: none;
+            border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: inherit; margin-top: 8px;
+        }
+        .btn-login:hover { background: #6b85f9; box-shadow: 0 8px 24px var(--c-accent-glow); transform: translateY(-1px); }
+        .error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+        .footer { text-align: center; color: var(--c-text3); font-size: 12px; margin-top: 32px; }
+        .grid-bg {
+            position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(79,110,247,0.04) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(79,110,247,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="bg-glow"></div>
+    <div class="login-card">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-store-alt" style="color:white;"></i></div>
+            <div>
+                <div class="logo-text">INSol POS</div>
+                <div class="logo-sub">Point of Sale System</div>
+            </div>
+        </div>
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Sign in to your account to continue</p>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="error"><i class="fas fa-exclamation-triangle"></i> @ViewBag.Error</div>
+        }
+
+        <form method="post" action="/Account/Login">
+            <div class="form-group">
+                <label>USERNAME</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" placeholder="Enter username" required autofocus />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>PASSWORD</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Enter password" required />
+                </div>
+            </div>
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+        </form>
+
+        <div class="footer">
+            &copy; @DateTime.Now.Year INSol POS &mdash; All rights reserved
+        </div>
+    </div>
+</body>
+</html>

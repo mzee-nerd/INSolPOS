@@ -1,0 +1,47 @@
+@using INSolPOS.Models
+@model List<SaleRoute>
+@{
+    ViewBag.Title = "Sale Routes";
+    ViewBag.NavContext = "routes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="flex justify-between items-center mb-4">
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count route(s)</div>
+    <button onclick="document.getElementById('addRoute').classList.add('open')" class="btn btn-primary"><i class="fas fa-plus"></i> Add Route</button>
+</div>
+<div class="card">
+    <div class="card-header"><span class="card-title">Sale Routes / Areas</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Route Name</th><th>Area</th><th>Description</th><th>Customers</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@r.Name</td>
+                        <td><span class="badge badge-info">@(r.Area ?? "—")</span></td>
+                        <td class="text-muted text-sm">@(r.Description ?? "—")</td>
+                        <td class="font-mono">@r.Customers.Count</td>
+                        <td>@(r.IsActive ? Html.Raw("<span class='badge badge-success'>Active</span>") : Html.Raw("<span class='badge badge-danger'>Inactive</span>"))</td>
+                        <td><a href="/Routes/Edit/@r.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="modal-backdrop" id="addRoute">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-route text-accent" style="margin-right:8px;"></i>Add Sale Route</div>
+        <form method="post" action="/Routes/Create">
+            <div class="form-group mb-3"><label class="form-label">ROUTE NAME *</label><input type="text" name="Name" class="form-control" required placeholder="e.g. North City Route" /></div>
+            <div class="form-group mb-3"><label class="form-label">AREA</label><input type="text" name="Area" class="form-control" placeholder="e.g. Saddar, Cantt" /></div>
+            <div class="form-group mb-4"><label class="form-label">DESCRIPTION</label><textarea name="Description" class="form-control" rows="2"></textarea></div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Route</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addRoute').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {<script>document.querySelectorAll('.modal-backdrop').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')})});</script>}

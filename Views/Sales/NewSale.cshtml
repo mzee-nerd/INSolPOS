@@ -1,0 +1,372 @@
+@using INSolPOS.Models
+@{
+    ViewBag.Title = "New Sale";
+    ViewBag.NavContext = "new-sale";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var customers = ViewBag.Customers as List<Customer> ?? new();
+    var staff = ViewBag.Staff as List<Staff> ?? new();
+}
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+
+    <!-- LEFT: Product Selection -->
+    <div>
+        <!-- Search Bar -->
+        <div class="card mb-4">
+            <div class="card-body" style="padding:14px 20px;">
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <div style="position:relative;flex:1;">
+                        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--c-text3);"></i>
+                        <input type="text" id="productSearch" placeholder="Search product or scan barcode..." class="form-control" style="padding-left:38px;font-size:14px;" autofocus />
+                    </div>
+                    <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:200;max-height:240px;overflow-y:auto;box-shadow:var(--shadow);"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-shopping-cart" style="margin-right:8px;color:var(--c-accent);"></i>Cart Items</span>
+                <button class="btn btn-danger btn-sm" onclick="clearCart()"><i class="fas fa-trash"></i> Clear</button>
+            </div>
+            <div id="cartBody">
+                <div id="emptyCart" style="text-align:center;padding:48px 20px;color:var(--c-text3);">
+                    <i class="fas fa-shopping-cart" style="font-size:40px;opacity:0.3;display:block;margin-bottom:12px;"></i>
+                    <div style="font-size:14px;">No items in cart. Search or scan a product above.</div>
+                </div>
+                <div class="table-wrap" id="cartTable" style="display:none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Carton</th>
+                                <th>Loose</th>
+                                <th>Price</th>
+                                <th>Disc</th>
+                                <th>Amount</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartRows"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Sale Panel -->
+    <div style="position:sticky;top:80px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Sale Details</span></div>
+            <div class="card-body">
+                <form method="post" action="/Sales/NewSale" id="saleForm">
+                    <div class="form-group">
+                        <label class="form-label">CUSTOMER</label>
+                        <select name="CustomerId" id="customerId" class="form-control">
+                            <option value="">— Walk-in Customer —</option>
+                            @foreach (var c in customers)
+                            {
+                                <option value="@c.Id">@c.Name (@c.Phone)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">SALESMAN</label>
+                        <select name="StaffId" class="form-control">
+                            <option value="">— None —</option>
+                            @foreach (var s in staff)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">SALE TYPE</label>
+                        <select name="SaleType" id="saleTypeSelect" class="form-control" onchange="onSaleTypeChange()">
+                            <option value="1">Cash Sale</option>
+                            <option value="2">Credit Sale</option>
+                            <option value="3">Wholesale</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">PAYMENT METHOD</label>
+                        <select name="PaymentMethod" class="form-control">
+                            <option value="1">Cash</option>
+                            <option value="2">Bank Transfer</option>
+                            <option value="3">Cheque</option>
+                        </select>
+                    </div>
+
+                    <div style="background:var(--c-surface2);border:1px solid var(--c-border);border-radius:10px;padding:16px;margin:16px 0;">
+                        <div class="flex justify-between mb-2 text-sm">
+                            <span class="text-muted">Sub Total</span>
+                            <span class="font-mono" id="dispSubTotal">Rs. 0.00</span>
+                        </div>
+                        <div class="flex justify-between mb-2 text-sm">
+                            <span class="text-muted">Discount</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="color:var(--c-text3);">Rs.</span>
+                                <input type="number" name="Discount" id="discountInput" value="0" min="0" step="0.01" class="form-control font-mono" style="width:90px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
+                            </div>
+                        </div>
+                        <div class="flex justify-between mb-2 text-sm">
+                            <span class="text-muted">Tax</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="color:var(--c-text3);">Rs.</span>
+                                <input type="number" name="Tax" value="0" min="0" step="0.01" class="form-control font-mono" style="width:90px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
+                            </div>
+                        </div>
+                        <div style="border-top:1px solid var(--c-border);padding-top:12px;margin-top:8px;" class="flex justify-between">
+                            <span style="font-weight:700;font-size:14px;">TOTAL</span>
+                            <span class="font-mono fw-bold text-accent" style="font-size:18px;" id="dispTotal">Rs. 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="paidGroup">
+                        <label class="form-label">PAID AMOUNT</label>
+                        <input type="number" name="PaidAmount" id="paidInput" class="form-control font-mono" value="0" min="0" step="0.01" oninput="calcChange()" />
+                    </div>
+
+                    <div id="changeRow" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:none;">
+                        <div class="flex justify-between">
+                            <span class="text-green">Change</span>
+                            <span class="font-mono text-green fw-bold" id="dispChange">Rs. 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">NOTES</label>
+                        <textarea name="Notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+
+                    <!-- Hidden product inputs will be injected here -->
+                    <div id="hiddenInputs"></div>
+                    <input type="hidden" name="SubTotal" id="subTotalInput" value="0" />
+
+                    <button type="submit" class="btn btn-primary w-full" style="font-size:15px;padding:13px;justify-content:center;" id="submitBtn" disabled>
+                        <i class="fas fa-check-circle"></i> Complete Sale
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Dropdown -->
+<div id="floatDropdown" style="display:none;position:fixed;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:999;min-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.5);"></div>
+
+@section Scripts {
+<script>
+    let cart = [];
+    let searchTimer = null;
+
+    // ── Search
+    const searchInput = document.getElementById('productSearch');
+    const dropdown = document.getElementById('floatDropdown');
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        const q = searchInput.value.trim();
+        if (!q) { dropdown.style.display = 'none'; return; }
+        searchTimer = setTimeout(() => searchProducts(q), 250);
+    });
+
+    searchInput.addEventListener('keydown', e => {
+        if (e.key === 'Escape') dropdown.style.display = 'none';
+    });
+
+    document.addEventListener('click', e => {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target))
+            dropdown.style.display = 'none';
+    });
+
+    async function searchProducts(q) {
+        const res = await fetch(`/Products/Search?q=${encodeURIComponent(q)}`);
+        const products = await res.json();
+        if (!products.length) {
+            dropdown.innerHTML = `<div style="padding:16px;color:var(--c-text3);font-size:13px;text-align:center;">No products found</div>`;
+        } else {
+            dropdown.innerHTML = products.map(p => `
+                <div onclick="addToCart(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='var(--c-surface2)'" onmouseout="this.style.background=''">
+                    <div>
+                        <div style="font-size:13.5px;font-weight:600;">${p.name}</div>
+                        <div style="font-size:11px;color:var(--c-text3);">Barcode: ${p.barcode||'—'} | Stock: ${p.currentStock}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--c-accent);">Rs.${p.salePrice.toFixed(2)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        positionDropdown();
+        dropdown.style.display = 'block';
+    }
+
+    function positionDropdown() {
+        const rect = searchInput.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + 6) + 'px';
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.width = rect.width + 'px';
+    }
+
+    function addToCart(product) {
+        dropdown.style.display = 'none';
+        searchInput.value = '';
+        searchInput.focus();
+
+        const existing = cart.find(i => i.id === product.id);
+        if (existing) {
+            existing.looseQty++;
+        } else {
+            cart.push({
+                id: product.id,
+                name: product.name,
+                cartonQty: 0,
+                looseQty: 1,
+                price: product.salePrice,
+                discount: 0,
+                cartonSize: product.cartonQty || 1,
+                commissionPct: product.commissionPercentage || 0
+            });
+        }
+        renderCart();
+    }
+
+    function renderCart() {
+        const rows = document.getElementById('cartRows');
+        const emptyCart = document.getElementById('emptyCart');
+        const cartTable = document.getElementById('cartTable');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (!cart.length) {
+            emptyCart.style.display = 'block';
+            cartTable.style.display = 'none';
+            submitBtn.disabled = true;
+            return;
+        }
+        emptyCart.style.display = 'none';
+        cartTable.style.display = 'block';
+        submitBtn.disabled = false;
+
+        rows.innerHTML = cart.map((item, i) => {
+            const totalQty = (item.cartonQty * item.cartonSize) + item.looseQty;
+            const amount = (totalQty * item.price) - item.discount;
+            return `
+            <tr>
+                <td style="color:var(--c-text3);font-size:12px;">${i+1}</td>
+                <td>
+                    <div style="font-weight:600;font-size:13px;">${item.name}</div>
+                    <div style="font-size:11px;color:var(--c-text3);">Carton=${item.cartonSize} pcs</div>
+                </td>
+                <td>
+                    <input type="number" value="${item.cartonQty}" min="0" step="0.5"
+                        style="width:60px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
+                        onchange="cart[${i}].cartonQty=parseFloat(this.value)||0;renderCart()" />
+                </td>
+                <td>
+                    <input type="number" value="${item.looseQty}" min="0" step="0.5"
+                        style="width:60px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
+                        onchange="cart[${i}].looseQty=parseFloat(this.value)||0;renderCart()" />
+                </td>
+                <td>
+                    <input type="number" value="${item.price}" min="0" step="0.01"
+                        style="width:80px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
+                        onchange="cart[${i}].price=parseFloat(this.value)||0;renderCart()" />
+                </td>
+                <td>
+                    <input type="number" value="${item.discount}" min="0" step="0.01"
+                        style="width:70px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
+                        onchange="cart[${i}].discount=parseFloat(this.value)||0;renderCart()" />
+                </td>
+                <td class="font-mono fw-semibold text-accent">Rs.${amount.toFixed(2)}</td>
+                <td>
+                    <button type="button" onclick="removeFromCart(${i})" class="btn btn-danger btn-xs btn-icon">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        calcTotal();
+        buildHiddenInputs();
+    }
+
+    function removeFromCart(i) {
+        cart.splice(i, 1);
+        renderCart();
+    }
+
+    function clearCart() {
+        if (cart.length && !confirm('Clear all items from cart?')) return;
+        cart = [];
+        renderCart();
+    }
+
+    function calcTotal() {
+        const subTotal = cart.reduce((sum, item) => {
+            const totalQty = (item.cartonQty * item.cartonSize) + item.looseQty;
+            return sum + (totalQty * item.price) - item.discount;
+        }, 0);
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const tax = parseFloat(document.querySelector('[name="Tax"]').value) || 0;
+        const total = subTotal + tax - discount;
+
+        document.getElementById('dispSubTotal').textContent = 'Rs. ' + subTotal.toFixed(2);
+        document.getElementById('dispTotal').textContent = 'Rs. ' + total.toFixed(2);
+        document.getElementById('subTotalInput').value = subTotal.toFixed(2);
+        document.getElementById('paidInput').value = total.toFixed(2);
+        calcChange();
+    }
+
+    function calcChange() {
+        const total = parseFloat(document.getElementById('dispTotal').textContent.replace('Rs. ', '')) || 0;
+        const paid = parseFloat(document.getElementById('paidInput').value) || 0;
+        const change = paid - total;
+        const row = document.getElementById('changeRow');
+        if (paid > 0 && change >= 0) {
+            document.getElementById('dispChange').textContent = 'Rs. ' + change.toFixed(2);
+            row.style.display = 'block';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
+    function onSaleTypeChange() {
+        const type = document.getElementById('saleTypeSelect').value;
+        const custSelect = document.getElementById('customerId');
+        if (type === '2') {
+            custSelect.setAttribute('required', 'required');
+            custSelect.style.borderColor = 'var(--c-amber)';
+        } else {
+            custSelect.removeAttribute('required');
+            custSelect.style.borderColor = '';
+        }
+    }
+
+    function buildHiddenInputs() {
+        const container = document.getElementById('hiddenInputs');
+        container.innerHTML = cart.map((item, i) => `
+            <input type="hidden" name="productIds" value="${item.id}" />
+            <input type="hidden" name="cartonQtys" value="${item.cartonQty}" />
+            <input type="hidden" name="looseQtys" value="${item.looseQty}" />
+            <input type="hidden" name="prices" value="${item.price}" />
+            <input type="hidden" name="discounts" value="${item.discount}" />
+        `).join('');
+    }
+
+    // Form submit validation
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+        if (!cart.length) {
+            e.preventDefault();
+            alert('Please add at least one product to the cart.');
+            return;
+        }
+        buildHiddenInputs();
+    });
+</script>
+}

@@ -1,0 +1,66 @@
+@using INSolPOS.Models
+@model List<Purchase>
+@{
+    ViewBag.Title = "Purchases";
+    ViewBag.NavContext = "purchases";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count purchase(s) shown</div>
+    <a href="/Purchases/Create" class="btn btn-primary"><i class="fas fa-plus"></i> New Purchase</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Purchase History</span>
+        <input type="text" id="searchBox" placeholder="Search..." class="form-control" style="width:200px;" oninput="filterTable()" />
+    </div>
+    <div class="table-wrap">
+        <table id="purchTable">
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Date</th>
+                    <th>Vendor</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Paid</th>
+                    <th class="text-right">Due</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="font-mono text-accent">@p.InvoiceNo</td>
+                        <td class="text-muted text-sm">@p.PurchaseDate.ToString("dd MMM yy")</td>
+                        <td>@p.Vendor?.Name</td>
+                        <td class="text-right font-mono fw-semibold">@p.TotalAmount.ToString("N2")</td>
+                        <td class="text-right font-mono text-green">@p.PaidAmount.ToString("N2")</td>
+                        <td class="text-right font-mono @(p.DueAmount > 0 ? "text-amber fw-bold" : "text-muted")">
+                            @(p.DueAmount > 0 ? p.DueAmount.ToString("N2") : "—")
+                        </td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="/Purchases/Details/@p.Id" class="btn btn-secondary btn-xs"><i class="fas fa-eye"></i></a>
+                                <a href="/Purchases/Return/@p.Id" class="btn btn-warning btn-xs"><i class="fas fa-undo"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function filterTable() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        document.querySelectorAll('#purchTable tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+</script>
+}

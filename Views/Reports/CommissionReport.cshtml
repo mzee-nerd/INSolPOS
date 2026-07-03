@@ -1,0 +1,80 @@
+@using INSolPOS.Models
+@model List<SaleCommission>
+@{
+    ViewBag.Title = "Commission Report";
+    ViewBag.NavContext = "comm-report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var staff = ViewBag.Staff as List<Staff> ?? new();
+}
+
+<div class="flex justify-between items-center mb-4 no-print">
+    <form method="get" class="flex gap-2 items-center">
+        <input type="date" name="from" value="@ViewBag.From?.ToString("yyyy-MM-dd")" class="form-control" style="width:150px;" />
+        <span class="text-muted">to</span>
+        <input type="date" name="to" value="@ViewBag.To?.ToString("yyyy-MM-dd")" class="form-control" style="width:150px;" />
+        <select name="staffId" class="form-control" style="width:180px;">
+            <option value="">All Staff</option>
+            @foreach (var s in staff) { <option value="@s.Id">@s.Name</option> }
+        </select>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+    </form>
+    <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="stat-card">
+        <div class="stat-label">Total Commission</div>
+        <div class="stat-value font-mono text-accent" style="font-size:20px;">Rs. @Model.Sum(c => c.CommissionAmount).ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Paid Out</div>
+        <div class="stat-value font-mono text-green" style="font-size:20px;">Rs. @Model.Where(c => c.IsPaid).Sum(c => c.CommissionAmount).ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value font-mono text-amber" style="font-size:20px;">Rs. @Model.Where(c => !c.IsPaid).Sum(c => c.CommissionAmount).ToString("N0")</div>
+    </div>
+</div>
+
+<!-- Summary by staff -->
+<div class="card mb-4">
+    <div class="card-header"><span class="card-title">Summary by Salesman</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Salesman</th><th class="text-right">Sales Count</th><th class="text-right">Total Commission</th><th class="text-right">Paid</th><th class="text-right">Pending</th></tr></thead>
+            <tbody>
+                @foreach (var grp in Model.GroupBy(c => c.Staff?.Name ?? "Unknown"))
+                {
+                    <tr>
+                        <td class="fw-semibold">@grp.Key</td>
+                        <td class="text-right font-mono">@grp.Count()</td>
+                        <td class="text-right font-mono fw-bold text-accent">Rs. @grp.Sum(c => c.CommissionAmount).ToString("N2")</td>
+                        <td class="text-right font-mono text-green">Rs. @grp.Where(c => c.IsPaid).Sum(c => c.CommissionAmount).ToString("N2")</td>
+                        <td class="text-right font-mono text-amber">Rs. @grp.Where(c => !c.IsPaid).Sum(c => c.CommissionAmount).ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">Commission Details</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Invoice</th><th>Date</th><th>Salesman</th><th class="text-right">Commission</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td class="font-mono text-accent">@c.Sale?.InvoiceNo</td>
+                        <td class="text-muted text-sm">@c.Sale?.SaleDate.ToString("dd MMM yy")</td>
+                        <td class="fw-semibold">@c.Staff?.Name</td>
+                        <td class="text-right font-mono fw-bold">Rs. @c.CommissionAmount.ToString("N2")</td>
+                        <td>@(c.IsPaid ? Html.Raw("<span class='badge badge-success'>Paid</span>") : Html.Raw("<span class='badge badge-warning'>Pending</span>"))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

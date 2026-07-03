@@ -1,0 +1,95 @@
+@using INSolPOS.Models
+@model List<Sale>
+@{
+    ViewBag.Title = "Sales Report";
+    ViewBag.NavContext = "sales-report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var customers = ViewBag.Customers as List<Customer> ?? new();
+    var staff = ViewBag.Staff as List<Staff> ?? new();
+}
+
+<div class="flex justify-between items-center mb-4 no-print">
+    <form method="get" class="flex gap-2 items-center" style="flex-wrap:wrap;">
+        <input type="date" name="from" value="@ViewBag.From?.ToString("yyyy-MM-dd")" class="form-control" style="width:150px;" />
+        <span class="text-muted">to</span>
+        <input type="date" name="to" value="@ViewBag.To?.ToString("yyyy-MM-dd")" class="form-control" style="width:150px;" />
+        <select name="customerId" class="form-control" style="width:180px;">
+            <option value="">All Customers</option>
+            @foreach (var c in customers) { <option value="@c.Id">@c.Name</option> }
+        </select>
+        <select name="staffId" class="form-control" style="width:160px;">
+            <option value="">All Staff</option>
+            @foreach (var s in staff) { <option value="@s.Id">@s.Name</option> }
+        </select>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+    </form>
+    <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="stat-card">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value font-mono text-accent">@Model.Count</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Revenue</div>
+        <div class="stat-value font-mono text-green" style="font-size:20px;">Rs. @Model.Sum(s => s.TotalAmount).ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Collected</div>
+        <div class="stat-value font-mono text-accent" style="font-size:20px;">Rs. @Model.Sum(s => s.PaidAmount).ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Outstanding</div>
+        <div class="stat-value font-mono text-amber" style="font-size:20px;">Rs. @Model.Sum(s => s.DueAmount).ToString("N0")</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">Sales Details</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Salesman</th>
+                    <th>Type</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Paid</th>
+                    <th class="text-right">Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="font-mono text-accent">@s.InvoiceNo</td>
+                        <td class="text-sm text-muted">@s.SaleDate.ToString("dd MMM yy")</td>
+                        <td>@(s.Customer?.Name ?? "Walk-in")</td>
+                        <td class="text-muted">@(s.Staff?.Name ?? "—")</td>
+                        <td>
+                            @if (s.SaleType == SaleType.Cash) { <span class="badge badge-success">Cash</span> }
+                            else if (s.SaleType == SaleType.Credit) { <span class="badge badge-warning">Credit</span> }
+                            else { <span class="badge badge-info">Wholesale</span> }
+                        </td>
+                        <td class="text-right font-mono">@s.TotalAmount.ToString("N2")</td>
+                        <td class="text-right font-mono text-green">@s.PaidAmount.ToString("N2")</td>
+                        <td class="text-right font-mono @(s.DueAmount > 0 ? "text-amber" : "text-muted")">
+                            @(s.DueAmount > 0 ? s.DueAmount.ToString("N2") : "—")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr style="background:var(--c-surface2);font-weight:700;">
+                    <td colspan="5">TOTALS</td>
+                    <td class="text-right font-mono">Rs. @Model.Sum(s => s.TotalAmount).ToString("N2")</td>
+                    <td class="text-right font-mono text-green">Rs. @Model.Sum(s => s.PaidAmount).ToString("N2")</td>
+                    <td class="text-right font-mono text-amber">Rs. @Model.Sum(s => s.DueAmount).ToString("N2")</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

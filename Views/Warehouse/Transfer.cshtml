@@ -1,0 +1,101 @@
+@using INSolPOS.Models
+@{
+    ViewBag.Title = "Warehouse Transfer";
+    ViewBag.NavContext = "warehouse";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var warehouses = ViewBag.Warehouses as List<Warehouse> ?? new();
+    var products = ViewBag.Products as List<Product> ?? new();
+}
+<div class="flex gap-2 mb-4">
+    <a href="/Warehouse/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-exchange-alt text-accent" style="margin-right:8px;"></i>Stock Transfer</span>
+            <button class="btn btn-primary btn-sm" onclick="addTransferRow()"><i class="fas fa-plus"></i> Add Product</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Product</th><th>Transfer Qty</th><th></th></tr></thead>
+                <tbody id="transferRows">
+                    <tr id="emptyTransferRow">
+                        <td colspan="3" style="text-align:center;padding:32px;color:var(--c-text3);">Add products to transfer</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="position:sticky;top:80px;">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Transfer Details</span></div>
+            <div class="card-body">
+                <form method="post" action="/Warehouse/Transfer" id="transferForm">
+                    <div class="form-group mb-3">
+                        <label class="form-label">FROM WAREHOUSE</label>
+                        <select name="fromWarehouseId" class="form-control" required>
+                            <option value="">Select source...</option>
+                            @foreach (var w in warehouses)
+                            {
+                                <option value="@w.Id">@w.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">TO WAREHOUSE</label>
+                        <select name="toWarehouseId" class="form-control" required>
+                            <option value="">Select destination...</option>
+                            @foreach (var w in warehouses)
+                            {
+                                <option value="@w.Id">@w.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="form-label">NOTES</label>
+                        <textarea name="Notes" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div id="transferHidden"></div>
+                    <button type="submit" class="btn btn-primary w-full" style="justify-content:center;">
+                        <i class="fas fa-exchange-alt"></i> Execute Transfer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        products.Select(p => new { p.Id, p.Name, p.CurrentStock })));
+    let tRowCount = 0;
+
+    function addTransferRow() {
+        document.getElementById('emptyTransferRow')?.remove();
+        tRowCount++;
+        const r = document.createElement('tr');
+        r.id = 'tr_' + tRowCount;
+        r.innerHTML = `
+            <td>
+                <select name="productIds" class="form-control">
+                    <option value="">Select product...</option>
+                    ${products.map(p=>`<option value="${p.id}">${p.name} (Stk:${p.currentStock})</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <input type="number" name="quantities" value="0" min="0" step="0.5"
+                    class="form-control font-mono" style="width:100px;" />
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-xs btn-icon" onclick="document.getElementById('tr_${tRowCount}').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        `;
+        document.getElementById('transferRows').appendChild(r);
+    }
+</script>
+}

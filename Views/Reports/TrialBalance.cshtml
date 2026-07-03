@@ -1,0 +1,309 @@
+@using INSolPOS.Services
+@model TrialBalance
+@{
+    ViewBag.Title = "Trial Balance";
+    ViewBag.NavContext = "tb";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex justify-between items-center mb-4">
+    <form method="get" class="flex gap-2 items-center">
+        <label class="form-label" style="white-space:nowrap;">As of:</label>
+        <input type="date" name="asOf" value="@Model?.AsOf.ToString("yyyy-MM-dd")" class="form-control" style="width:160px;" />
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Generate</button>
+    </form>
+    <button onclick="window.print()" class="btn btn-secondary no-print"><i class="fas fa-print"></i> Print</button>
+</div>
+
+@if (Model != null)
+{
+    var balanced = Math.Abs(Model.Discrepancy) < 0.01m;
+
+    <!-- Balance status banner -->
+    <div class="alert @(balanced ? "alert-success" : "alert-error") mb-4">
+        <i class="fas fa-@(balanced ? "check-circle" : "exclamation-triangle")"></i>
+        @if (balanced)
+        {
+            <span>Trial Balance is <strong>balanced</strong>. Total Dr = Total Cr = Rs. @Model.TotalDebit.ToString("N2")</span>
+        }
+        else
+        {
+            <span>
+                Discrepancy of <strong>Rs. @Math.Abs(Model.Discrepancy).ToString("N2")</strong>
+                — this is your <strong>Net @(Model.NetProfit >= 0 ? "Profit" : "Loss")</strong> which has been placed on the
+                @(Model.NetProfit >= 0 ? "Credit" : "Debit") side to balance the ledger.
+            </span>
+        }
+    </div>
+
+    <!-- Explanation card -->
+    <div class="card mb-4 no-print" style="background:rgba(79,110,247,0.06);border-color:rgba(79,110,247,0.25);">
+        <div class="card-body" style="padding:14px 20px;">
+            <div style="font-size:13px;color:var(--c-text2);line-height:1.7;">
+                <strong style="color:var(--c-accent);">How to read this:</strong>
+                A Trial Balance always balances because <strong>Net Profit (or Loss)</strong> is the
+                plug figure added to whichever side is smaller.
+                If your business made a profit of Rs. @Model.NetProfit.ToString("N2"), that profit is added to the
+                <strong>Credit side</strong> (it belongs to the owner / equity).
+                Debit = Credit ✓
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="max-width:820px;margin:0 auto;">
+        <!-- Header -->
+        <div style="text-align:center;padding:24px 24px 16px;border-bottom:1px solid var(--c-border);">
+            <div style="font-size:22px;font-weight:800;color:var(--c-accent);">INSol POS</div>
+            <div style="font-size:17px;font-weight:700;margin-top:4px;">TRIAL BALANCE</div>
+            <div class="text-muted text-sm">As of @Model.AsOf.ToString("dd MMMM yyyy")</div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:42%;">Account Head</th>
+                        <th class="text-right" style="width:29%;color:var(--c-red);">
+                            <i class="fas fa-arrow-down" style="margin-right:4px;"></i>DEBIT (Dr)
+                        </th>
+                        <th class="text-right" style="width:29%;color:var(--c-green);">
+                            <i class="fas fa-arrow-up" style="margin-right:4px;"></i>CREDIT (Cr)
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <!-- ── ASSETS / DEBIT SIDE ── -->
+                    <tr style="background:rgba(239,68,68,0.04);">
+                        <td colspan="3" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-text3);padding:8px 14px 4px;">
+                            Assets &amp; Costs (Debit)
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Cash in Hand</div>
+                            <div class="text-xs text-muted">Capital + cash received − cash paid − expenses</div>
+                        </td>
+                        <td class="text-right font-mono fw-semibold">@Model.CashInHand.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Closing Stock (Inventory)</div>
+                            <div class="text-xs text-muted">Current stock × purchase price</div>
+                        </td>
+                        <td class="text-right font-mono fw-semibold">@Model.Inventory.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Trade Receivables (Debtors)</div>
+                            <div class="text-xs text-muted">Credit sales not yet collected</div>
+                        </td>
+                        <td class="text-right font-mono fw-semibold text-amber">@Model.Receivables.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Purchases</div>
+                            <div class="text-xs text-muted">Total goods purchased</div>
+                        </td>
+                        <td class="text-right font-mono">@Model.TotalPurchases.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    @if (Model.PurchaseReturns > 0)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-muted" style="padding-left:16px;">(-) Purchase Returns</div>
+                            </td>
+                            <td class="text-right font-mono text-red">(@Model.PurchaseReturns.ToString("N2"))</td>
+                            <td class="text-right font-mono text-muted">—</td>
+                        </tr>
+                    }
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Staff Salaries</div>
+                        </td>
+                        <td class="text-right font-mono">@Model.SalaryExpenses.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Sale Commissions</div>
+                        </td>
+                        <td class="text-right font-mono">@Model.CommExpenses.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Other Expenses</div>
+                        </td>
+                        <td class="text-right font-mono">@Model.OtherExpenses.ToString("N2")</td>
+                        <td class="text-right font-mono text-muted">—</td>
+                    </tr>
+
+                    <!-- ── LIABILITIES & EQUITY / CREDIT SIDE ── -->
+                    <tr style="background:rgba(34,197,94,0.04);">
+                        <td colspan="3" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-text3);padding:12px 14px 4px;">
+                            Liabilities &amp; Equity (Credit)
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Capital / Owner's Equity</div>
+                            <div class="text-xs text-muted">Initial capital invested</div>
+                        </td>
+                        <td class="text-right font-mono text-muted">—</td>
+                        <td class="text-right font-mono fw-semibold text-accent">@Model.Capital.ToString("N2")</td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Sales Revenue</div>
+                        </td>
+                        <td class="text-right font-mono text-muted">—</td>
+                        <td class="text-right font-mono">@Model.TotalSales.ToString("N2")</td>
+                    </tr>
+
+                    @if (Model.SaleReturns > 0)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-muted" style="padding-left:16px;">(-) Sale Returns</div>
+                            </td>
+                            <td class="text-right font-mono text-muted">—</td>
+                            <td class="text-right font-mono text-red">(@Model.SaleReturns.ToString("N2"))</td>
+                        </tr>
+                    }
+
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">Trade Payables (Creditors)</div>
+                            <div class="text-xs text-muted">Purchases not yet paid to vendors</div>
+                        </td>
+                        <td class="text-right font-mono text-muted">—</td>
+                        <td class="text-right font-mono text-amber">@Model.Payables.ToString("N2")</td>
+                    </tr>
+
+                    <!-- ── NET PROFIT / LOSS as balancing figure ── -->
+                    @if (Model.NetProfit > 0)
+                    {
+                        <tr style="background:rgba(34,197,94,0.08);">
+                            <td>
+                                <div class="fw-semibold text-green">
+                                    <i class="fas fa-arrow-circle-up" style="margin-right:6px;"></i>Net Profit
+                                </div>
+                                <div class="text-xs text-muted">Gross Profit Rs.@Model.GrossProfit.ToString("N2") − Expenses Rs.@Model.TotalExpenses.ToString("N2")</div>
+                            </td>
+                            <td class="text-right font-mono text-muted">—</td>
+                            <td class="text-right font-mono fw-bold text-green">@Model.NetProfit.ToString("N2")</td>
+                        </tr>
+                    }
+                    else if (Model.NetProfit < 0)
+                    {
+                        <tr style="background:rgba(239,68,68,0.08);">
+                            <td>
+                                <div class="fw-semibold text-red">
+                                    <i class="fas fa-arrow-circle-down" style="margin-right:6px;"></i>Net Loss
+                                </div>
+                                <div class="text-xs text-muted">Gross Profit Rs.@Model.GrossProfit.ToString("N2") − Expenses Rs.@Model.TotalExpenses.ToString("N2")</div>
+                            </td>
+                            <td class="text-right font-mono fw-bold text-red">@Math.Abs(Model.NetProfit).ToString("N2")</td>
+                            <td class="text-right font-mono text-muted">—</td>
+                        </tr>
+                    }
+
+                </tbody>
+                <tfoot>
+                    <tr style="background:var(--c-surface2);border-top:2px solid var(--c-border);">
+                        <td style="font-size:15px;font-weight:800;">TOTAL</td>
+                        <td class="text-right font-mono fw-bold" style="font-size:16px;color:var(--c-red);">
+                            Rs. @Model.TotalDebit.ToString("N2")
+                        </td>
+                        <td class="text-right font-mono fw-bold" style="font-size:16px;color:var(--c-green);">
+                            Rs. @Model.TotalCredit.ToString("N2")
+                        </td>
+                    </tr>
+                    <tr style="background:@(balanced ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)");">
+                        <td colspan="3" style="text-align:center;padding:14px;font-size:14px;font-weight:700;">
+                            @if (balanced)
+                            {
+                                <span style="color:var(--c-green);">
+                                    <i class="fas fa-check-circle"></i> BALANCED — Dr = Cr = Rs. @Model.TotalDebit.ToString("N2")
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color:var(--c-red);">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Difference: Rs. @Math.Abs(Model.Discrepancy).ToString("N2")
+                                    (Net @(Model.NetProfit >= 0 ? "Profit" : "Loss") added to @(Model.NetProfit >= 0 ? "Credit" : "Debit") side)
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Profit Summary sub-panel -->
+        <div style="padding:16px 24px;border-top:1px solid var(--c-border);background:var(--c-surface2);">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-text3);margin-bottom:12px;">
+                Profit Summary
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:13px;">
+                <div>
+                    <div class="text-muted text-xs">Net Sales</div>
+                    <div class="font-mono fw-bold">Rs. @Model.NetSales.ToString("N2")</div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">Net Purchases (COGS)</div>
+                    <div class="font-mono fw-bold">Rs. @Model.NetPurchases.ToString("N2")</div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">Gross Profit</div>
+                    <div class="font-mono fw-bold @(Model.GrossProfit >= 0 ? "text-green" : "text-red")">
+                        Rs. @Model.GrossProfit.ToString("N2")
+                    </div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">Total Expenses</div>
+                    <div class="font-mono fw-bold text-amber">Rs. @Model.TotalExpenses.ToString("N2")</div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">Net @(Model.NetProfit >= 0 ? "Profit" : "Loss")</div>
+                    <div class="font-mono fw-bold @(Model.NetProfit >= 0 ? "text-green" : "text-red")" style="font-size:16px;">
+                        Rs. @Math.Abs(Model.NetProfit).ToString("N2")
+                    </div>
+                </div>
+                <div>
+                    <div class="text-muted text-xs">Balance Status</div>
+                    <div>
+                        @if (balanced)
+                        {
+                            <span class="badge badge-success"><i class="fas fa-check"></i> Balanced</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-warning">Net @(Model.NetProfit >= 0 ? "Profit" : "Loss") Added</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="padding:12px;text-align:center;color:var(--c-text3);font-size:11px;border-top:1px solid var(--c-border);">
+            Generated on @DateTime.Now.ToString("dd MMM yyyy HH:mm") &nbsp;|&nbsp; INSol POS System
+        </div>
+    </div>
+}
