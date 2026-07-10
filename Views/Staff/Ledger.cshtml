@@ -1,0 +1,198 @@
+@using INSolPOS.Models
+@model List<Sale>
+@{
+    ViewBag.Title = "Salesman Ledger";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var staff       = ViewBag.Staff       as Staff;
+    var commissions = ViewBag.Commissions as List<SaleCommission> ?? new();
+    var from        = (DateTime)(ViewBag.From ?? DateTime.Today.AddMonths(-1));
+    var to          = (DateTime)(ViewBag.To   ?? DateTime.Today);
+    var totalSales  = Model.Sum(s => s.TotalAmount);
+    var totalComm   = commissions.Sum(c => c.CommissionAmount);
+    var paidComm    = commissions.Where(c => c.IsPaid).Sum(c => c.CommissionAmount);
+    var pendComm    = commissions.Where(c => !c.IsPaid).Sum(c => c.CommissionAmount);
+    decimal running = 0;
+}
+
+<div class="flex justify-between items-center mb-4 no-print">
+    <a href="/Staff/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+    <div class="flex gap-2">
+        <form method="get" class="flex gap-2 items-center">
+            <input type="hidden" name="id" value="@staff?.Id" />
+            <input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control" style="width:148px;" />
+            <span class="text-muted">—</span>
+            <input type="date" name="to"   value="@to.ToString("yyyy-MM-dd")"   class="form-control" style="width:148px;" />
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+        </form>
+        <button onclick="window.print()" class="btn btn-secondary btn-sm"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
+
+<!-- Staff Card -->
+<div class="card mb-4">
+    <div class="card-body" style="padding:16px 20px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--c-accent),var(--c-purple));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:white;flex-shrink:0;">
+                @(staff?.Name?.Substring(0, 1).ToUpper() ?? "S")
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:18px;font-weight:800;">@staff?.Name</div>
+                <div class="text-muted text-sm">@staff?.Designation &nbsp;|&nbsp; Phone: @(staff?.Phone ?? "—") &nbsp;|&nbsp; Basic Salary: Rs.@staff?.BasicSalary.ToString("N0")</div>
+            </div>
+            <div class="text-muted text-sm">Period: @from.ToString("dd MMM yyyy") — @to.ToString("dd MMM yyyy")</div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Total Sales</span>
+            <div class="stat-icon" style="background:rgba(79,110,247,0.12);color:var(--c-accent);"><i class="fas fa-receipt"></i></div>
+        </div>
+        <div class="stat-value font-mono text-accent" style="font-size:20px;">@Model.Count</div>
+        <div class="stat-change">Rs. @totalSales.ToString("N0") total value</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Commission Earned</span>
+            <div class="stat-icon" style="background:rgba(168,85,247,0.12);color:var(--c-purple);"><i class="fas fa-percentage"></i></div>
+        </div>
+        <div class="stat-value font-mono" style="color:var(--c-purple);font-size:20px;">Rs. @totalComm.ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Commission Paid</span>
+            <div class="stat-icon" style="background:rgba(34,197,94,0.12);color:var(--c-green);"><i class="fas fa-check-circle"></i></div>
+        </div>
+        <div class="stat-value font-mono text-green" style="font-size:20px;">Rs. @paidComm.ToString("N0")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Pending Commission</span>
+            <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:var(--c-amber);"><i class="fas fa-clock"></i></div>
+        </div>
+        <div class="stat-value font-mono text-amber" style="font-size:20px;">Rs. @pendComm.ToString("N0")</div>
+    </div>
+</div>
+
+<!-- Sales Ledger -->
+<div class="card mb-4">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-book text-accent" style="margin-right:8px;"></i>Sales Activity Ledger</span>
+        <span class="badge badge-info">@Model.Count sales</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th class="text-right">Sale Amount</th>
+                    <th class="text-right">Collected</th>
+                    <th class="text-right">Commission</th>
+                    <th class="text-right">Running Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int sRow = 1; }
+                @foreach (var s in Model)
+                {
+                    var comm = commissions.FirstOrDefault(c => c.SaleId == s.Id)?.CommissionAmount ?? 0;
+                    running += s.TotalAmount;
+                    <tr>
+                        <td class="text-muted text-xs">@(sRow++)</td>
+                        <td class="font-mono text-muted text-sm">@s.SaleDate.ToString("dd MMM yy")</td>
+                        <td class="font-mono text-accent">@s.InvoiceNo</td>
+                        <td class="fw-semibold">@(s.Customer?.Name ?? "Walk-in")</td>
+                        <td>
+                            @if (s.SaleType == SaleType.Cash)        { <span class="badge badge-success">Cash</span>      }
+                            else if (s.SaleType == SaleType.Credit)  { <span class="badge badge-warning">Credit</span>    }
+                            else                                      { <span class="badge badge-info">Wholesale</span>   }
+                        </td>
+                        <td class="text-right font-mono">Rs. @s.TotalAmount.ToString("N2")</td>
+                        <td class="text-right font-mono text-green">Rs. @s.PaidAmount.ToString("N2")</td>
+                        <td class="text-right font-mono @(comm > 0 ? "" : "text-muted")" style="color:@(comm > 0 ? "var(--c-purple)" : "")">
+                            @(comm > 0 ? "Rs. " + comm.ToString("N2") : "—")
+                        </td>
+                        <td class="text-right font-mono fw-semibold text-accent">Rs. @running.ToString("N2")</td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="9" style="text-align:center;padding:32px;color:var(--c-text3);">
+                            <i class="fas fa-receipt" style="font-size:28px;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                            No sales found for this period.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            @if (Model.Any())
+            {
+                <tfoot>
+                    <tr style="background:var(--c-surface2);font-weight:700;">
+                        <td colspan="5">TOTALS</td>
+                        <td class="text-right font-mono">Rs. @totalSales.ToString("N2")</td>
+                        <td class="text-right font-mono text-green">Rs. @Model.Sum(s => s.PaidAmount).ToString("N2")</td>
+                        <td class="text-right font-mono" style="color:var(--c-purple);">Rs. @totalComm.ToString("N2")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>
+
+<!-- Commission Breakdown -->
+@if (commissions.Any())
+{
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-percentage" style="margin-right:8px;color:var(--c-purple);"></i>Commission Breakdown</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Sale Date</th>
+                        <th class="text-right">Commission</th>
+                        <th>Status</th>
+                        <th>Paid On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in commissions)
+                    {
+                        <tr>
+                            <td class="font-mono text-accent">@c.Sale?.InvoiceNo</td>
+                            <td class="text-muted text-sm">@c.Sale?.SaleDate.ToString("dd MMM yy")</td>
+                            <td class="text-right font-mono fw-bold" style="color:var(--c-purple);">Rs. @c.CommissionAmount.ToString("N2")</td>
+                            <td>
+                                @if (c.IsPaid) { <span class="badge badge-success">Paid</span> }
+                                else           { <span class="badge badge-warning">Pending</span> }
+                            </td>
+                            <td class="text-muted text-sm">@(c.PaidOn?.ToString("dd MMM yy") ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="background:var(--c-surface2);font-weight:700;">
+                        <td colspan="2">TOTAL</td>
+                        <td class="text-right font-mono" style="color:var(--c-purple);">Rs. @totalComm.ToString("N2")</td>
+                        <td colspan="2">
+                            <span class="text-green">Paid: Rs. @paidComm.ToString("N2")</span>
+                            &nbsp;|&nbsp;
+                            <span class="text-amber">Pending: Rs. @pendComm.ToString("N2")</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}

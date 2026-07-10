@@ -1,10 +1,11 @@
-﻿@using INSolPOS.Models
+@using INSolPOS.Models
 @model SaleReturn
 @{
     ViewBag.Title = "Process Sale Return";
     ViewBag.NavContext = "sale-returns";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var sale = ViewBag.Sale as Sale;
+    var sale           = ViewBag.Sale           as Sale;
+    var alreadyReturned= ViewBag.AlreadyReturned as Dictionary<int,decimal> ?? new();
 }
 
 <div class="flex gap-2 mb-4">
@@ -17,16 +18,17 @@
     <div class="card">
         <div class="card-header">
             <span class="card-title"><i class="fas fa-undo text-amber" style="margin-right:8px;"></i>Return Items — @sale?.InvoiceNo</span>
-            <span class="badge badge-info">@sale?.SaleDate.ToString("dd MMM yyyy")</span>
+            <span class="badge badge-info">@sale?.SaleDate.ToString("dd MMM yyyy HH:mm")</span>
         </div>
         <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
                         <th>Product</th>
-                        <th class="text-right">Sold Qty</th>
-                        <th class="text-right">Unit Price</th>
-                        <th class="text-right">Sold Value</th>
+                        <th class="text-right">Sold Qty<br/><small style="font-weight:400;">(loose units)</small></th>
+                        <th class="text-right">Already Returned</th>
+                        <th class="text-right">Sale Price/Unit</th>
+                        <th class="text-right">Max Returnable</th>
                         <th class="text-right">Return Qty</th>
                         <th class="text-right">Return Value</th>
                     </tr>
@@ -34,25 +36,32 @@
                 <tbody>
                     @foreach (var item in sale?.Items ?? new())
                     {
+                        var alreadyRet   = alreadyReturned.TryGetValue(item.ProductId, out var ar) ? ar : 0;
+                        var maxReturnable= item.TotalQty - alreadyRet;
                         <tr>
                             <input type="hidden" name="productIds" value="@item.ProductId" form="returnForm" />
-                            <input type="hidden" name="prices" value="@item.SalePrice" form="returnForm" />
+                            <input type="hidden" name="prices"     value="@item.SalePrice.ToString("F4")" form="returnForm" />
                             <td>
                                 <div class="fw-semibold">@item.Product?.Name</div>
-                                @if (item.CartonQty > 0)
-                                {
-                                    <div class="text-xs text-muted">@item.CartonQty ctn + @item.LooseQty loose</div>
-                                }
+                                <div class="text-xs text-muted">@item.CartonQty ctn + @item.LooseQty pcs = @item.TotalQty total</div>
                             </td>
                             <td class="text-right font-mono">@item.TotalQty</td>
-                            <td class="text-right font-mono">@item.SalePrice.ToString("N2")</td>
-                            <td class="text-right font-mono">@item.TotalAmount.ToString("N2")</td>
+                            <td class="text-right font-mono @(alreadyRet > 0 ? "text-amber" : "text-muted")">
+                                @(alreadyRet > 0 ? alreadyRet.ToString("N2") : "—")
+                            </td>
+                            <td class="text-right font-mono">Rs. @item.SalePrice.ToString("N4")</td>
+                            <td class="text-right font-mono @(maxReturnable <= 0 ? "text-red" : "text-green")">
+                                @maxReturnable.ToString("N2")
+                                @if (maxReturnable <= 0) { <span class="text-xs">(fully returned)</span> }
+                            </td>
                             <td class="text-right">
                                 <input type="number" name="quantities" value="0"
-                                       min="0" max="@item.TotalQty" step="0.5" form="returnForm"
-                                       class="form-control font-mono text-right"
-                                       style="width:90px;display:inline-block;"
-                                       oninput="calcReturn(this, @item.SalePrice)" />
+                                    min="0" max="@maxReturnable.ToString("F2")" step="0.5"
+                                    @(maxReturnable <= 0 ? "disabled" : "")
+                                    class="form-control font-mono"
+                                    style="width:90px;text-align:right;display:inline-block;"
+                                    oninput="calcLine(@item.ProductId, @item.SalePrice.ToString("F4"), this.value)"
+                                    form="returnForm" />
                             </td>
                             <td class="text-right font-mono fw-semibold text-red" id="rv_@item.ProductId">0.00</td>
                         </tr>
@@ -60,18 +69,17 @@
                 </tbody>
                 <tfoot>
                     <tr style="background:var(--c-surface2);font-weight:700;">
-                        <td colspan="3">TOTAL</td>
-                        <td class="text-right font-mono">Rs. @(sale?.Items.Sum(i => i.TotalAmount).ToString("N2") ?? "0.00")</td>
-                        <td></td>
-                        <td class="text-right font-mono text-red" id="totalReturnVal">Rs. 0.00</td>
+                        <td colspan="6">RETURN TOTAL</td>
+                        <td class="text-right font-mono text-red" id="footTotal">Rs. 0.00</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
 
-    <!-- Right: Summary + submit -->
+    <!-- Right Panel -->
     <div style="position:sticky;top:80px;">
+        <!-- Original Sale Summary -->
         <div class="card mb-4">
             <div class="card-header"><span class="card-title">Original Sale</span></div>
             <div class="card-body">
@@ -80,55 +88,45 @@
                     <div class="flex justify-between"><span class="text-muted">Customer</span><span class="fw-semibold">@(sale?.Customer?.Name ?? "Walk-in")</span></div>
                     <div class="flex justify-between"><span class="text-muted">Date</span><span class="font-mono">@sale?.SaleDate.ToString("dd MMM yy")</span></div>
                     <div class="flex justify-between"><span class="text-muted">Total</span><span class="font-mono fw-bold">Rs. @sale?.TotalAmount.ToString("N2")</span></div>
-                    <div class="flex justify-between">
-                        <span class="text-muted">Type</span>
-                        <span>
-                            @if (sale?.SaleType == SaleType.Credit)
-                            {
-                                <span class="badge badge-warning">Credit</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge-success">Cash</span>
-                            }
-                        </span>
+                    <div class="flex justify-between"><span class="text-muted">Type</span>
+                        @if (sale?.SaleType == SaleType.Credit)      { <span class="badge badge-warning">Credit</span>    }
+                        else if (sale?.SaleType == SaleType.Cash)    { <span class="badge badge-success">Cash</span>      }
+                        else                                          { <span class="badge badge-info">Wholesale</span>   }
                     </div>
+                    @if (sale?.IsCredit == true)
+                    {
+                        <div style="margin-top:4px;padding:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:6px;font-size:12px;color:var(--c-green);">
+                            <i class="fas fa-info-circle"></i> Customer ledger will be credited automatically.
+                        </div>
+                    }
                 </div>
             </div>
         </div>
 
+        <!-- Submit -->
         <div class="card">
-            <div class="card-header"><span class="card-title">Return Summary</span></div>
+            <div class="card-header"><span class="card-title">Confirm Return</span></div>
             <div class="card-body">
                 <form method="post" action="/SaleReturns/FromSale" id="returnForm">
                     <input type="hidden" name="SaleId" value="@sale?.Id" />
 
-                    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;margin-bottom:16px;">
-                        <div class="flex justify-between">
-                            <span style="font-weight:700;font-size:14px;">Return Total</span>
-                            <span class="font-mono fw-bold text-red" style="font-size:20px;" id="summaryTotal">Rs. 0.00</span>
-                        </div>
-                        <div class="text-xs text-muted mt-2">Stock will be restored for returned quantities.</div>
-                        @if (sale?.IsCredit == true)
-                        {
-                            <div class="text-xs text-green mt-1">
-                                <i class="fas fa-info-circle"></i> Customer ledger will be credited automatically.
-                            </div>
-                        }
+                    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
+                        <div class="text-muted text-sm mb-1">Total Return Amount</div>
+                        <div class="font-mono fw-bold text-red" style="font-size:22px;" id="summaryTotal">Rs. 0.00</div>
+                        <div class="text-xs text-muted mt-2">Stock will be restored upon processing.</div>
                     </div>
 
                     <div class="form-group mb-4">
                         <label class="form-label">REASON FOR RETURN *</label>
-                        <textarea name="Reason" class="form-control" rows="3"
-                                  placeholder="Describe the reason (damaged, wrong item, quality issue, etc.)" required></textarea>
+                        <textarea name="Reason" class="form-control" rows="3" required
+                            placeholder="e.g. Damaged goods, wrong item, expired, customer request..."></textarea>
                     </div>
 
-                    <button type="submit" class="btn btn-warning w-full" style="justify-content:center;font-size:14px;padding:12px;">
+                    <button type="submit" id="submitBtn" disabled
+                            class="btn btn-warning w-full" style="justify-content:center;font-size:14px;padding:12px;">
                         <i class="fas fa-undo"></i> Process Return
                     </button>
-                    <a href="/SaleReturns/Create" class="btn btn-secondary w-full" style="justify-content:center;margin-top:8px;">
-                        Cancel
-                    </a>
+                    <a href="/SaleReturns/Create" class="btn btn-secondary w-full" style="justify-content:center;margin-top:8px;">Cancel</a>
                 </form>
             </div>
         </div>
@@ -136,24 +134,24 @@
 </div>
 
 @section Scripts {
-    <script>
-        function calcReturn(input, price) {
-            const qty = parseFloat(input.value) || 0;
-            const val = qty * price;
-            const productId = input.closest('tr').querySelector('[name="productIds"]')?.value;
-            const el = document.getElementById('rv_' + productId);
-            if (el) el.textContent = val.toFixed(2);
-            updateTotal();
-        }
-
-        function updateTotal() {
-            let total = 0;
-            document.querySelectorAll('[id^="rv_"]').forEach(el => {
-                total += parseFloat(el.textContent) || 0;
-            });
-            const fmt = 'Rs. ' + total.toFixed(2);
-            document.getElementById('totalReturnVal').textContent = fmt;
-            document.getElementById('summaryTotal').textContent   = fmt;
-        }
-    </script>
+<script>
+function calcLine(productId, price, qty) {
+    const q   = parseFloat(qty) || 0;
+    const val = q * parseFloat(price);
+    const el  = document.getElementById('rv_' + productId);
+    if (el) el.textContent = val.toFixed(2);
+    updateTotal();
+}
+function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('[id^="rv_"]').forEach(el => { total += parseFloat(el.textContent) || 0; });
+    const fmt = 'Rs. ' + total.toFixed(2);
+    const s = document.getElementById('summaryTotal');
+    const f = document.getElementById('footTotal');
+    const b = document.getElementById('submitBtn');
+    if (s) s.textContent = fmt;
+    if (f) f.textContent = fmt;
+    if (b) b.disabled = total <= 0;
+}
+</script>
 }

@@ -51,7 +51,22 @@ namespace INSolPOS.Helpers
 
             if (!SessionHelper.IsLoggedIn(HttpContext.Session))
             {
-                context.Result = RedirectToAction("Login", "Account");
+                // Return JSON 401 for AJAX requests instead of redirect
+                var isAjax = context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                          || context.HttpContext.Request.Headers["Accept"].ToString().Contains("application/json")
+                          || context.HttpContext.Request.Path.StartsWithSegments("/Products/Search")
+                          || context.HttpContext.Request.Path.StartsWithSegments("/Products/GetByBarcode");
+                if (isAjax)
+                {
+                    context.Result = new Microsoft.AspNetCore.Mvc.JsonResult(new { error = "Session expired. Please login again." })
+                    {
+                        StatusCode = 401
+                    };
+                }
+                else
+                {
+                    context.Result = RedirectToAction("Login", "Account");
+                }
                 return;
             }
 

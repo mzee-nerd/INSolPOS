@@ -1,4 +1,4 @@
-﻿@using INSolPOS.Models
+@using INSolPOS.Models
 @model List<SaleReturn>
 @{
     ViewBag.Title = "Sale Returns";
@@ -7,7 +7,7 @@
 }
 
 <div class="flex justify-between items-center mb-4">
-    <div style="font-size:13px;color:var(--c-text3);">@Model.Count return(s) recorded</div>
+    <div style="font-size:13px;color:var(--c-text3);">@Model.Count return(s) on record</div>
     <a href="/SaleReturns/Create" class="btn btn-warning"><i class="fas fa-undo"></i> New Sale Return</a>
 </div>
 
@@ -17,12 +17,12 @@
             <span class="stat-label">Total Returns</span>
             <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:var(--c-amber);"><i class="fas fa-undo"></i></div>
         </div>
-        <div class="stat-value font-mono text-amber" style="font-size:20px;">@Model.Count</div>
+        <div class="stat-value font-mono text-amber" style="font-size:22px;">@Model.Count</div>
     </div>
     <div class="stat-card">
         <div class="stat-card-header">
-            <span class="stat-label">Total Value</span>
-            <div class="stat-icon" style="background:rgba(239,68,68,0.12);color:var(--c-red);"><i class="fas fa-rupee-sign"></i></div>
+            <span class="stat-label">Total Return Value</span>
+            <div class="stat-icon" style="background:rgba(239,68,68,0.12);color:var(--c-red);"><i class="fas fa-coins"></i></div>
         </div>
         <div class="stat-value font-mono text-red" style="font-size:20px;">Rs. @Model.Sum(r => r.TotalAmount).ToString("N0")</div>
     </div>
@@ -46,18 +46,21 @@
         <table id="retTable">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Return Date</th>
                     <th>Sale Invoice</th>
                     <th>Customer</th>
-                    <th>Items</th>
+                    <th>Items Returned</th>
                     <th class="text-right">Return Value</th>
                     <th>Reason</th>
                 </tr>
             </thead>
             <tbody>
+                @{ int row = 1; }
                 @foreach (var r in Model)
                 {
                     <tr>
+                        <td class="text-muted text-xs">@(row++)</td>
                         <td class="font-mono text-muted text-sm">@r.ReturnDate.ToString("dd MMM yy HH:mm")</td>
                         <td class="font-mono text-accent">@(r.Sale?.InvoiceNo ?? "—")</td>
                         <td class="fw-semibold">@(r.Sale?.Customer?.Name ?? "Walk-in")</td>
@@ -67,9 +70,7 @@
                                 <div class="text-sm">@item.Product?.Name <span class="text-muted">(×@item.Quantity)</span></div>
                             }
                             @if (r.Items.Count > 2)
-                            {
-                                <div class="text-xs text-muted">+@(r.Items.Count - 2) more</div>
-                            }
+                            { <div class="text-xs text-muted">+@(r.Items.Count - 2) more item(s)</div> }
                         </td>
                         <td class="text-right font-mono fw-bold text-red">Rs. @r.TotalAmount.ToString("N2")</td>
                         <td class="text-muted text-sm">@(r.Reason ?? "—")</td>
@@ -78,9 +79,9 @@
                 @if (!Model.Any())
                 {
                     <tr>
-                        <td colspan="6" style="text-align:center;padding:40px;color:var(--c-text3);">
+                        <td colspan="7" style="text-align:center;padding:40px;color:var(--c-text3);">
                             <i class="fas fa-undo" style="font-size:32px;opacity:0.3;display:block;margin-bottom:10px;"></i>
-                            No sale returns recorded yet.
+                            No sale returns on record.
                         </td>
                     </tr>
                 }
@@ -90,12 +91,12 @@
 </div>
 
 @section Scripts {
-    <script>
-        function filterTable() {
-            const q = document.getElementById('searchBox').value.toLowerCase();
-            document.querySelectorAll('#retTable tbody tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-            });
-        }
-    </script>
+<script>
+function filterTable() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    document.querySelectorAll('#retTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
 }

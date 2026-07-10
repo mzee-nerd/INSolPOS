@@ -5,45 +5,100 @@
     ViewBag.NavContext = "warehouse";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+
 <div class="flex justify-between items-center mb-4">
     <div style="font-size:13px;color:var(--c-text3);">@Model.Count warehouse(s)</div>
-    <button onclick="document.getElementById('addWH').classList.add('open')" class="btn btn-primary"><i class="fas fa-plus"></i> Add Warehouse</button>
+    <button onclick="document.getElementById('addWH').classList.add('open')" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Warehouse
+    </button>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error mb-4"><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success mb-4"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>
+}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
     @foreach (var w in Model)
     {
         <div class="card">
             <div class="card-body">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                    <div style="width:46px;height:46px;background:rgba(79,110,247,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--c-accent);">
+                <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+                    <div style="width:46px;height:46px;background:rgba(79,110,247,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--c-accent);flex-shrink:0;">
                         <i class="fas fa-warehouse"></i>
                     </div>
-                    <div>
+                    <div style="flex:1;">
                         <div class="fw-bold" style="font-size:15px;">@w.Name</div>
-                        <div class="text-muted text-sm">@(w.Location ?? "No location")</div>
+                        <div class="text-muted text-sm">@(w.Location ?? "No location set")</div>
+                        @if (!string.IsNullOrEmpty(w.ManagerName))
+                        {
+                            <div style="font-size:12px;color:var(--c-text3);margin-top:2px;">
+                                <i class="fas fa-user" style="margin-right:4px;"></i>@w.ManagerName
+                            </div>
+                        }
                     </div>
+                    <!-- Delete button top-right -->
+                    <form method="post" action="/Warehouse/Delete/@w.Id" style="display:inline;"
+                          onsubmit="return confirm('Delete warehouse \'@w.Name\'?\n\nThis will deactivate the warehouse. Warehouses with stock or transaction history cannot be deleted.')">
+                        <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete Warehouse">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
                 </div>
-                <div style="font-size:12px;color:var(--c-text3);margin-bottom:12px;">Manager: @(w.ManagerName ?? "—")</div>
+
                 <div class="flex gap-2">
-                    <a href="/Warehouse/Stock/@w.Id" class="btn btn-secondary btn-sm"><i class="fas fa-boxes"></i> View Stock</a>
-                    <a href="/Warehouse/Transfer" class="btn btn-primary btn-sm"><i class="fas fa-exchange-alt"></i> Transfer</a>
+                    <a href="/Warehouse/Stock/@w.Id" class="btn btn-secondary btn-sm" style="flex:1;justify-content:center;">
+                        <i class="fas fa-boxes"></i> View Stock
+                    </a>
+                    <a href="/Warehouse/Transfer" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
+                        <i class="fas fa-exchange-alt"></i> Transfer
+                    </a>
                 </div>
             </div>
         </div>
     }
+    @if (!Model.Any())
+    {
+        <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--c-text3);">
+            <i class="fas fa-warehouse" style="font-size:48px;opacity:0.2;display:block;margin-bottom:12px;"></i>
+            No warehouses registered yet. Add one to get started.
+        </div>
+    }
 </div>
+
+<!-- Add Warehouse Modal -->
 <div class="modal-backdrop" id="addWH">
     <div class="modal">
         <div class="modal-title"><i class="fas fa-warehouse text-accent" style="margin-right:8px;"></i>Add Warehouse</div>
         <form method="post" action="/Warehouse/Create">
-            <div class="form-group mb-3"><label class="form-label">NAME *</label><input type="text" name="Name" class="form-control" required /></div>
-            <div class="form-group mb-3"><label class="form-label">LOCATION</label><input type="text" name="Location" class="form-control" /></div>
-            <div class="form-group mb-4"><label class="form-label">MANAGER NAME</label><input type="text" name="ManagerName" class="form-control" /></div>
+            <div class="form-group mb-3">
+                <label class="form-label">NAME *</label>
+                <input type="text" name="Name" class="form-control" required placeholder="e.g. Main Warehouse" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label">LOCATION</label>
+                <input type="text" name="Location" class="form-control" placeholder="e.g. Lahore - Main Branch" />
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">MANAGER NAME</label>
+                <input type="text" name="ManagerName" class="form-control" placeholder="Optional" />
+            </div>
             <div class="flex gap-2">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add</button>
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addWH').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Warehouse</button>
+                <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('addWH').classList.remove('open')">Cancel</button>
             </div>
         </form>
     </div>
 </div>
-@section Scripts {<script>document.querySelectorAll('.modal-backdrop').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')})});</script>}
+
+@section Scripts {
+<script>
+document.querySelectorAll('.modal-backdrop').forEach(el =>
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+</script>
+}

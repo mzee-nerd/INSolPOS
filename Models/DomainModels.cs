@@ -422,4 +422,32 @@ namespace INSolPOS.Models
         public string? Notes { get; set; }
         public int ReceivedByUserId { get; set; }
     }
+
+    // ─────────────── VENDOR LEDGER ───────────────
+    public class VendorLedger
+    {
+        public int Id { get; set; }
+        public int VendorId { get; set; }
+        public Vendor? Vendor { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
+        public string Description { get; set; } = "";
+        public decimal Debit { get; set; }
+        public decimal Credit { get; set; }
+        public decimal Balance { get; set; }
+        public string? ReferenceType { get; set; }
+        public int? ReferenceId { get; set; }
+    }
+
+    public class VendorPayment
+    {
+        public int Id { get; set; }
+        public int VendorId { get; set; }
+        public Vendor? Vendor { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
+        public PaymentMethod Method { get; set; }
+        public string? ChequeNo { get; set; }
+        public string? Notes { get; set; }
+        public int PaidByUserId { get; set; }
+    }
 }

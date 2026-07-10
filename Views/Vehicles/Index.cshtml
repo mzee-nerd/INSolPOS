@@ -5,50 +5,100 @@
     ViewBag.NavContext = "vehicles";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+
 <div class="flex justify-between items-center mb-4">
     <div style="font-size:13px;color:var(--c-text3);">@Model.Count vehicle(s) registered</div>
-    <button onclick="document.getElementById('addVehicle').classList.add('open')" class="btn btn-primary"><i class="fas fa-plus"></i> Register Vehicle</button>
+    <button onclick="document.getElementById('addVehicle').classList.add('open')" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Register Vehicle
+    </button>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error mb-4"><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success mb-4"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>
+}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;">
     @foreach (var v in Model)
     {
+        var activeLoad = v.Loads.FirstOrDefault(l => l.Status == LoadStatus.Loaded);
         <div class="card">
             <div class="card-body">
-                <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
-                    <div style="width:50px;height:50px;background:rgba(168,85,247,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--c-purple);">
+                <!-- Header row with vehicle info + delete -->
+                <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;">
+                    <div style="width:50px;height:50px;background:rgba(168,85,247,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--c-purple);flex-shrink:0;">
                         <i class="fas fa-truck"></i>
                     </div>
-                    <div>
+                    <div style="flex:1;">
                         <div class="fw-bold font-mono" style="font-size:16px;color:var(--c-accent);">@v.VehicleNo</div>
                         <div class="text-muted text-sm">@(v.Model ?? "Unknown Model")</div>
                     </div>
+                    <form method="post" action="/Vehicles/Delete/@v.Id" style="display:inline;"
+                          onsubmit="return confirm('Delete vehicle \'@v.VehicleNo\'?\n\nVehicles with active loads cannot be deleted.')">
+                        <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete Vehicle">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;margin-bottom:14px;">
-                    <div class="flex justify-between"><span class="text-muted">Driver</span> <span class="fw-semibold">@(v.DriverName ?? "—")</span></div>
-                    <div class="flex justify-between"><span class="text-muted">Phone</span> <span class="font-mono">@(v.DriverPhone ?? "—")</span></div>
-                    <div class="flex justify-between"><span class="text-muted">Total Loads</span> <span class="badge badge-accent">@v.Loads.Count</span></div>
+
+                <!-- Driver Info -->
+                <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;margin-bottom:14px;padding:10px 12px;background:var(--c-surface2);border-radius:8px;">
+                    <div class="flex justify-between">
+                        <span class="text-muted"><i class="fas fa-user" style="width:14px;"></i> Driver</span>
+                        <span class="fw-semibold">@(v.DriverName ?? "—")</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-muted"><i class="fas fa-phone" style="width:14px;"></i> Phone</span>
+                        <span class="font-mono">@(v.DriverPhone ?? "—")</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-muted"><i class="fas fa-history" style="width:14px;"></i> Total Loads</span>
+                        <span class="badge badge-accent">@v.Loads.Count</span>
+                    </div>
+                    @if (activeLoad != null)
+                    {
+                        <div class="flex justify-between">
+                            <span class="text-muted"><i class="fas fa-truck-loading" style="width:14px;"></i> Status</span>
+                            <span class="badge badge-warning">Currently Loaded</span>
+                        </div>
+                    }
                 </div>
+
+                <!-- Action Buttons -->
                 <div class="flex gap-2">
                     <a href="/Vehicles/LoadVehicle/@v.Id" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
                         <i class="fas fa-truck-loading"></i> Load
                     </a>
-                    @{
-                        var activeLoad = v.Loads.FirstOrDefault(l => l.Status == LoadStatus.Loaded);
-                    }
                     @if (activeLoad != null)
                     {
                         <a href="/Vehicles/UnloadVehicle/@activeLoad.Id" class="btn btn-warning btn-sm" style="flex:1;justify-content:center;">
                             <i class="fas fa-truck"></i> Unload
                         </a>
                     }
+                    else
+                    {
+                        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center;opacity:0.4;" disabled title="No active load">
+                            <i class="fas fa-truck"></i> Unload
+                        </button>
+                    }
                 </div>
             </div>
         </div>
     }
+    @if (!Model.Any())
+    {
+        <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--c-text3);">
+            <i class="fas fa-truck" style="font-size:48px;opacity:0.2;display:block;margin-bottom:12px;"></i>
+            No vehicles registered yet. Add one to get started.
+        </div>
+    }
 </div>
 
-<!-- Add Vehicle Modal -->
+<!-- Register Vehicle Modal -->
 <div class="modal-backdrop" id="addVehicle">
     <div class="modal">
         <div class="modal-title"><i class="fas fa-truck text-purple" style="margin-right:8px;"></i>Register Vehicle</div>
@@ -59,7 +109,7 @@
                     <input type="text" name="VehicleNo" class="form-control font-mono" required placeholder="e.g. LZR-1234" />
                 </div>
                 <div class="form-group">
-                    <label class="form-label">MODEL</label>
+                    <label class="form-label">MODEL / TYPE</label>
                     <input type="text" name="Model" class="form-control" placeholder="e.g. Suzuki Bolan 2020" />
                 </div>
                 <div class="form-group">
@@ -68,12 +118,13 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">DRIVER PHONE</label>
-                    <input type="text" name="DriverPhone" class="form-control font-mono" />
+                    <input type="text" name="DriverPhone" class="form-control font-mono" placeholder="03XX-XXXXXXX" />
                 </div>
             </div>
             <div class="flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Register</button>
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addVehicle').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('addVehicle').classList.remove('open')">Cancel</button>
             </div>
         </form>
     </div>
@@ -81,8 +132,7 @@
 
 @section Scripts {
 <script>
-    document.querySelectorAll('.modal-backdrop').forEach(el => {
-        el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-    });
+document.querySelectorAll('.modal-backdrop').forEach(el =>
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
 </script>
 }

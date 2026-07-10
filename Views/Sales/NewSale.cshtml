@@ -5,48 +5,56 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     var customers = ViewBag.Customers as List<Customer> ?? new();
     var staff = ViewBag.Staff as List<Staff> ?? new();
+    var products = ViewBag.Products as List<Product> ?? new();
 }
 
-<div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+<!-- Floating search dropdown (fixed position, always on top) -->
+<div id="floatDropdown" style="display:none;position:fixed;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:9999;min-width:380px;max-height:260px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);"></div>
 
-    <!-- LEFT: Product Selection -->
+<div style="display:grid;grid-template-columns:1fr 390px;gap:20px;align-items:start;">
+
+    <!-- LEFT: Cart -->
     <div>
-        <!-- Search Bar -->
+        <!-- Search bar -->
         <div class="card mb-4">
-            <div class="card-body" style="padding:14px 20px;">
-                <div style="display:flex;gap:12px;align-items:center;">
-                    <div style="position:relative;flex:1;">
-                        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--c-text3);"></i>
-                        <input type="text" id="productSearch" placeholder="Search product or scan barcode..." class="form-control" style="padding-left:38px;font-size:14px;" autofocus />
-                    </div>
-                    <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:200;max-height:240px;overflow-y:auto;box-shadow:var(--shadow);"></div>
+            <div class="card-body" style="padding:12px 16px;">
+                <div style="position:relative;">
+                    <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--c-text3);"></i>
+                    <input type="text" id="productSearch"
+                           placeholder="Type product name to search or scan barcode..."
+                           class="form-control" style="padding-left:38px;font-size:14px;" autofocus />
                 </div>
             </div>
         </div>
 
-        <!-- Cart Items -->
+        <!-- Cart table -->
         <div class="card">
             <div class="card-header">
-                <span class="card-title"><i class="fas fa-shopping-cart" style="margin-right:8px;color:var(--c-accent);"></i>Cart Items</span>
-                <button class="btn btn-danger btn-sm" onclick="clearCart()"><i class="fas fa-trash"></i> Clear</button>
-            </div>
-            <div id="cartBody">
-                <div id="emptyCart" style="text-align:center;padding:48px 20px;color:var(--c-text3);">
-                    <i class="fas fa-shopping-cart" style="font-size:40px;opacity:0.3;display:block;margin-bottom:12px;"></i>
-                    <div style="font-size:14px;">No items in cart. Search or scan a product above.</div>
+                <span class="card-title"><i class="fas fa-shopping-cart text-accent" style="margin-right:8px;"></i>Cart</span>
+                <div class="flex gap-2 items-center">
+                    <span class="badge badge-accent" id="cartCount">0 items</span>
+                    <button type="button" class="btn btn-danger btn-xs" onclick="clearCart()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
                 </div>
-                <div class="table-wrap" id="cartTable" style="display:none;">
-                    <table>
+            </div>
+            <div id="emptyCart" style="text-align:center;padding:48px;color:var(--c-text3);">
+                <i class="fas fa-shopping-cart" style="font-size:36px;opacity:0.3;display:block;margin-bottom:12px;"></i>
+                Search a product above to add it to the cart.
+            </div>
+            <div id="cartTableWrap" style="display:none;">
+                <div class="table-wrap">
+                    <table style="font-size:12.5px;">
                         <thead>
                             <tr>
                                 <th>#</th>
                                 <th>Product</th>
-                                <th>Carton</th>
-                                <th>Loose</th>
-                                <th>Price</th>
-                                <th>Disc</th>
-                                <th>Amount</th>
-                                <th></th>
+                                <th style="width:75px;">Cartons</th>
+                                <th style="width:75px;">Loose</th>
+                                <th style="width:100px;">Price/Unit</th>
+                                <th style="width:75px;">Discount</th>
+                                <th class="text-right" style="width:90px;">Amount</th>
+                                <th style="width:36px;"></th>
                             </tr>
                         </thead>
                         <tbody id="cartRows"></tbody>
@@ -56,24 +64,23 @@
         </div>
     </div>
 
-    <!-- RIGHT: Sale Panel -->
+    <!-- RIGHT: Sale form -->
     <div style="position:sticky;top:80px;">
         <div class="card">
             <div class="card-header"><span class="card-title">Sale Details</span></div>
             <div class="card-body">
                 <form method="post" action="/Sales/NewSale" id="saleForm">
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label class="form-label">CUSTOMER</label>
                         <select name="CustomerId" id="customerId" class="form-control">
                             <option value="">— Walk-in Customer —</option>
                             @foreach (var c in customers)
                             {
-                                <option value="@c.Id">@c.Name (@c.Phone)</option>
+                                <option value="@c.Id">@c.Name (@(c.Phone ?? "no phone"))</option>
                             }
                         </select>
                     </div>
-
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label class="form-label">SALESMAN</label>
                         <select name="StaffId" class="form-control">
                             <option value="">— None —</option>
@@ -83,17 +90,15 @@
                             }
                         </select>
                     </div>
-
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label class="form-label">SALE TYPE</label>
                         <select name="SaleType" id="saleTypeSelect" class="form-control" onchange="onSaleTypeChange()">
                             <option value="1">Cash Sale</option>
-                            <option value="2">Credit Sale</option>
+                            <option value="2">Credit Sale (requires customer)</option>
                             <option value="3">Wholesale</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label class="form-label">PAYMENT METHOD</label>
                         <select name="PaymentMethod" class="form-control">
                             <option value="1">Cash</option>
@@ -102,53 +107,45 @@
                         </select>
                     </div>
 
-                    <div style="background:var(--c-surface2);border:1px solid var(--c-border);border-radius:10px;padding:16px;margin:16px 0;">
-                        <div class="flex justify-between mb-2 text-sm">
-                            <span class="text-muted">Sub Total</span>
-                            <span class="font-mono" id="dispSubTotal">Rs. 0.00</span>
-                        </div>
-                        <div class="flex justify-between mb-2 text-sm">
+                    <div style="background:var(--c-surface2);border:1px solid var(--c-border);border-radius:10px;padding:14px;margin:14px 0;">
+                        <div class="flex justify-between text-sm mb-2"><span class="text-muted">Sub Total</span><span class="font-mono" id="dispSubTotal">Rs. 0.00</span></div>
+                        <div class="flex justify-between text-sm mb-2" style="align-items:center;">
                             <span class="text-muted">Discount</span>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span style="color:var(--c-text3);">Rs.</span>
-                                <input type="number" name="Discount" id="discountInput" value="0" min="0" step="0.01" class="form-control font-mono" style="width:90px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
-                            </div>
+                            <input type="number" name="Discount" id="discountInput" value="0" min="0" step="0.01"
+                                   class="form-control font-mono" style="width:95px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
                         </div>
-                        <div class="flex justify-between mb-2 text-sm">
+                        <div class="flex justify-between text-sm mb-2" style="align-items:center;">
                             <span class="text-muted">Tax</span>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span style="color:var(--c-text3);">Rs.</span>
-                                <input type="number" name="Tax" value="0" min="0" step="0.01" class="form-control font-mono" style="width:90px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
-                            </div>
+                            <input type="number" name="Tax" value="0" min="0" step="0.01"
+                                   class="form-control font-mono" style="width:95px;padding:4px 8px;text-align:right;" oninput="calcTotal()" />
                         </div>
-                        <div style="border-top:1px solid var(--c-border);padding-top:12px;margin-top:8px;" class="flex justify-between">
-                            <span style="font-weight:700;font-size:14px;">TOTAL</span>
+                        <div class="flex justify-between" style="border-top:1px solid var(--c-border);padding-top:10px;margin-top:6px;">
+                            <span class="fw-bold">TOTAL</span>
                             <span class="font-mono fw-bold text-accent" style="font-size:18px;" id="dispTotal">Rs. 0.00</span>
                         </div>
                     </div>
 
-                    <div class="form-group" id="paidGroup">
+                    <div class="form-group mb-3">
                         <label class="form-label">PAID AMOUNT</label>
-                        <input type="number" name="PaidAmount" id="paidInput" class="form-control font-mono" value="0" min="0" step="0.01" oninput="calcChange()" />
+                        <input type="number" name="PaidAmount" id="paidInput" class="form-control font-mono"
+                               value="0" min="0" step="0.01" oninput="calcChange()" />
                     </div>
-
                     <div id="changeRow" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:none;">
                         <div class="flex justify-between">
                             <span class="text-green">Change</span>
                             <span class="font-mono text-green fw-bold" id="dispChange">Rs. 0.00</span>
                         </div>
                     </div>
-
-                    <div class="form-group">
+                    <div class="form-group mb-4">
                         <label class="form-label">NOTES</label>
-                        <textarea name="Notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+                        <textarea name="Notes" class="form-control" rows="2" placeholder="Optional..."></textarea>
                     </div>
 
-                    <!-- Hidden product inputs will be injected here -->
-                    <div id="hiddenInputs"></div>
                     <input type="hidden" name="SubTotal" id="subTotalInput" value="0" />
+                    <div id="hiddenInputs"></div>
 
-                    <button type="submit" class="btn btn-primary w-full" style="font-size:15px;padding:13px;justify-content:center;" id="submitBtn" disabled>
+                    <button type="submit" id="submitBtn" disabled
+                            class="btn btn-primary w-full" style="justify-content:center;font-size:15px;padding:13px;">
                         <i class="fas fa-check-circle"></i> Complete Sale
                     </button>
                 </form>
@@ -157,216 +154,224 @@
     </div>
 </div>
 
-<!-- Search Dropdown -->
-<div id="floatDropdown" style="display:none;position:fixed;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:999;min-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.5);"></div>
-
 @section Scripts {
-<script>
-    let cart = [];
-    let searchTimer = null;
+    <script>
+        const PRODUCTS = @Html.Raw(JsonSerializer.Serialize(products.Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                barcode = p.Barcode ?? "",
+                cartonQty = p.CartonQty,
+                salePrice = p.SalePrice,
+                wholesalePrice = p.WholesalePrice,
+                commissionPercentage = p.CommissionPercentage,
+                currentStock = p.CurrentStock,
+                unitName = p.Unit != null ? p.Unit.Abbreviation : "Pcs"
+            })));
 
-    // ── Search
-    const searchInput = document.getElementById('productSearch');
-    const dropdown = document.getElementById('floatDropdown');
+        let cart = [];
+        let searchTimer = null;
+        const searchInput = document.getElementById('productSearch');
+        const dropdown    = document.getElementById('floatDropdown');
 
-    searchInput.addEventListener('input', () => {
-        clearTimeout(searchTimer);
-        const q = searchInput.value.trim();
-        if (!q) { dropdown.style.display = 'none'; return; }
-        searchTimer = setTimeout(() => searchProducts(q), 250);
-    });
+        // ── Search filtering (client-side from pre-loaded list)
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            const q = searchInput.value.trim();
+            if (!q) { dropdown.style.display = 'none'; return; }
+            searchTimer = setTimeout(() => showDropdown(q), 150);
+        });
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Escape') dropdown.style.display = 'none';
+        });
+        document.addEventListener('click', e => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target))
+                dropdown.style.display = 'none';
+        });
 
-    searchInput.addEventListener('keydown', e => {
-        if (e.key === 'Escape') dropdown.style.display = 'none';
-    });
+        function showDropdown(q) {
+            const saleType = parseInt(document.getElementById('saleTypeSelect').value);
+            const ql = q.toLowerCase();
+            const matches = PRODUCTS.filter(p =>
+                p.name.toLowerCase().includes(ql) || p.barcode.toLowerCase().includes(ql)
+            ).slice(0, 12);
 
-    document.addEventListener('click', e => {
-        if (!searchInput.contains(e.target) && !dropdown.contains(e.target))
+            if (!matches.length) {
+                dropdown.innerHTML = `<div style="padding:16px;color:var(--c-text3);font-size:13px;text-align:center;">No products found for "${q}"</div>`;
+            } else {
+                dropdown.innerHTML = matches.map(p => {
+                    const price = saleType === 3 ? (p.wholesalePrice || p.salePrice) : p.salePrice;
+                    return `<div onclick='addToCart(${JSON.stringify(p).replace(/'/g,"&#39;")})'
+                        style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;"
+                        onmouseover="this.style.background='var(--c-surface2)'" onmouseout="this.style.background=''">
+                        <div>
+                            <div style="font-size:13.5px;font-weight:600;">${p.name}</div>
+                            <div style="font-size:11px;color:var(--c-text3);">
+                                ${p.barcode ? 'Code: ' + p.barcode + ' &nbsp;|&nbsp; ' : ''}
+                                Stock: <strong style="color:${p.currentStock > 0 ? 'var(--c-green)' : 'var(--c-red)'}">${p.currentStock}</strong>
+                            </div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+                            <div style="font-family:monospace;font-size:14px;font-weight:700;color:var(--c-accent);">Rs. ${price.toFixed(2)}</div>
+                            <div style="font-size:11px;color:var(--c-text3);">per unit</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            positionDropdown();
+            dropdown.style.display = 'block';
+        }
+
+        function positionDropdown() {
+            const rect = searchInput.getBoundingClientRect();
+            dropdown.style.top   = (rect.bottom + window.scrollY + 4) + 'px';
+            dropdown.style.left  = rect.left + 'px';
+            dropdown.style.width = Math.max(380, rect.width) + 'px';
+        }
+
+        let lastAddedId = null;
+
+        function addToCart(p) {
             dropdown.style.display = 'none';
-    });
+            searchInput.value = '';
+            const existing = cart.find(i => i.id === p.id);
+            if (existing) { existing.looseQty++; renderCart(); focusCarton(p.id); return; }
+            const saleType = parseInt(document.getElementById('saleTypeSelect').value);
+            const price = saleType === 3 ? (p.wholesalePrice || p.salePrice) : p.salePrice;
+            cart.push({ id: p.id, name: p.name, cartonQty: 0, looseQty: 1,
+                        price: price, discount: 0, cartonSize: p.cartonQty || 1,
+                        commissionPct: p.commissionPercentage || 0 });
+            lastAddedId = p.id;
+            renderCart();
+            focusCarton(p.id);
+        }
 
-    async function searchProducts(q) {
-        const res = await fetch(`/Products/Search?q=${encodeURIComponent(q)}`);
-        const products = await res.json();
-        if (!products.length) {
-            dropdown.innerHTML = `<div style="padding:16px;color:var(--c-text3);font-size:13px;text-align:center;">No products found</div>`;
-        } else {
-            dropdown.innerHTML = products.map(p => `
-                <div onclick="addToCart(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='var(--c-surface2)'" onmouseout="this.style.background=''">
-                    <div>
-                        <div style="font-size:13.5px;font-weight:600;">${p.name}</div>
-                        <div style="font-size:11px;color:var(--c-text3);">Barcode: ${p.barcode||'—'} | Stock: ${p.currentStock}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--c-accent);">Rs.${p.salePrice.toFixed(2)}</div>
-                    </div>
-                </div>
+        function focusCarton(productId) {
+            // Small delay so the DOM has rendered
+            setTimeout(() => {
+                const input = document.getElementById('carton_' + productId);
+                if (input) { input.focus(); input.select(); }
+                else searchInput.focus();
+            }, 50);
+        }
+
+        function renderCart() {
+            const empty   = document.getElementById('emptyCart');
+            const wrap    = document.getElementById('cartTableWrap');
+            const btn     = document.getElementById('submitBtn');
+            const count   = document.getElementById('cartCount');
+            empty.style.display = cart.length ? 'none'  : 'block';
+            wrap.style.display  = cart.length ? 'block' : 'none';
+            btn.disabled        = !cart.length;
+            count.textContent   = cart.length + ' item' + (cart.length !== 1 ? 's' : '');
+
+            document.getElementById('cartRows').innerHTML = cart.map((item, i) => {
+                const totalQty = (item.cartonQty * item.cartonSize) + item.looseQty;
+                const amount   = (totalQty * item.price) - item.discount;
+                return `<tr>
+                    <td style="color:var(--c-text3);font-size:11px;">${i+1}</td>
+                    <td>
+                        <div style="font-weight:600;">${item.name}</div>
+                        <div style="font-size:10px;color:var(--c-text3);">1 ctn = ${item.cartonSize} pcs</div>
+                    </td>
+                    <td><input type="number" id="carton_${item.id}" value="${item.cartonQty}" min="0" step="1"
+                        style="width:65px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:monospace;font-size:12px;"
+                        onchange="cart[${i}].cartonQty=parseFloat(this.value)||0;renderCart()"
+                        onkeydown="handleQtyKey(event,${i},'cartonQty')" /></td>
+                    <td><input type="number" id="loose_${item.id}" value="${item.looseQty}" min="0" step="0.5"
+                        style="width:65px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:monospace;font-size:12px;"
+                        onchange="cart[${i}].looseQty=parseFloat(this.value)||0;renderCart()"
+                        onkeydown="handleQtyKey(event,${i},'looseQty')" /></td>
+                    <td><input type="number" value="${item.price}" min="0" step="0.01"
+                        style="width:90px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:monospace;font-size:12px;"
+                        onchange="cart[${i}].price=parseFloat(this.value)||0;renderCart()" /></td>
+                    <td><input type="number" value="${item.discount}" min="0" step="0.01"
+                        style="width:68px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:monospace;font-size:12px;"
+                        onchange="cart[${i}].discount=parseFloat(this.value)||0;renderCart()" /></td>
+                    <td class="text-right font-mono fw-semibold text-accent">${amount.toFixed(2)}</td>
+                    <td><button type="button" onclick="cart.splice(${i},1);renderCart()"
+                        class="btn btn-danger btn-xs btn-icon"><i class="fas fa-times"></i></button></td>
+                </tr>`;
+            }).join('');
+
+            calcTotal();
+            buildHiddenInputs();
+        }
+
+        function removeFromCart(i) { cart.splice(i, 1); renderCart(); }
+        function clearCart() { if (cart.length && !confirm('Clear cart?')) return; cart = []; renderCart(); }
+
+        function calcTotal() {
+            const sub  = cart.reduce((s, i) => s + ((i.cartonQty * i.cartonSize + i.looseQty) * i.price) - i.discount, 0);
+            const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+            const tax  = parseFloat(document.querySelector('[name="Tax"]').value) || 0;
+            const tot  = sub + tax - disc;
+            document.getElementById('dispSubTotal').textContent = 'Rs. ' + sub.toFixed(2);
+            document.getElementById('dispTotal').textContent    = 'Rs. ' + tot.toFixed(2);
+            document.getElementById('subTotalInput').value      = sub.toFixed(2);
+            document.getElementById('paidInput').value          = tot.toFixed(2);
+            calcChange();
+        }
+
+        function calcChange() {
+            const tot  = parseFloat(document.getElementById('dispTotal').textContent.replace('Rs. ','')) || 0;
+            const paid = parseFloat(document.getElementById('paidInput').value) || 0;
+            const chg  = paid - tot;
+            const row  = document.getElementById('changeRow');
+            document.getElementById('dispChange').textContent = 'Rs. ' + Math.max(0, chg).toFixed(2);
+            row.style.display = paid > 0 && chg >= 0 ? 'block' : 'none';
+        }
+
+        function onSaleTypeChange() {
+            const type = parseInt(document.getElementById('saleTypeSelect').value);
+            const custSel = document.getElementById('customerId');
+            if (type === 2) {
+                custSel.setAttribute('required','required');
+                custSel.style.borderColor = 'var(--c-amber)';
+            } else {
+                custSel.removeAttribute('required');
+                custSel.style.borderColor = '';
+            }
+        }
+
+        function buildHiddenInputs() {
+            document.getElementById('hiddenInputs').innerHTML = cart.map(item => `
+                <input type="hidden" name="productIds" value="${item.id}" />
+                <input type="hidden" name="cartonQtys" value="${item.cartonQty}" />
+                <input type="hidden" name="looseQtys"  value="${item.looseQty}" />
+                <input type="hidden" name="prices"     value="${item.price}" />
+                <input type="hidden" name="discounts"  value="${item.discount}" />
             `).join('');
         }
-        positionDropdown();
-        dropdown.style.display = 'block';
-    }
 
-    function positionDropdown() {
-        const rect = searchInput.getBoundingClientRect();
-        dropdown.style.top = (rect.bottom + 6) + 'px';
-        dropdown.style.left = rect.left + 'px';
-        dropdown.style.width = rect.width + 'px';
-    }
-
-    function addToCart(product) {
-        dropdown.style.display = 'none';
-        searchInput.value = '';
-        searchInput.focus();
-
-        const existing = cart.find(i => i.id === product.id);
-        if (existing) {
-            existing.looseQty++;
-        } else {
-            cart.push({
-                id: product.id,
-                name: product.name,
-                cartonQty: 0,
-                looseQty: 1,
-                price: product.salePrice,
-                discount: 0,
-                cartonSize: product.cartonQty || 1,
-                commissionPct: product.commissionPercentage || 0
-            });
+        // +/- keyboard shortcuts on carton/loose inputs when focused
+        function handleQtyKey(e, cartIndex, field) {
+            const step = field === 'cartonQty' ? 1 : 0.5;
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                cart[cartIndex][field] = Math.max(0, (parseFloat(cart[cartIndex][field]) || 0) + step);
+                renderCart();
+                // Re-focus the same field after re-render
+                const fieldId = field === 'cartonQty' ? 'carton_' : 'loose_';
+                setTimeout(() => {
+                    const el = document.getElementById(fieldId + cart[cartIndex]?.id);
+                    if (el) { el.focus(); el.select(); }
+                }, 30);
+            } else if (e.key === '-') {
+                e.preventDefault();
+                cart[cartIndex][field] = Math.max(0, (parseFloat(cart[cartIndex][field]) || 0) - step);
+                renderCart();
+                const fieldId = field === 'cartonQty' ? 'carton_' : 'loose_';
+                setTimeout(() => {
+                    const el = document.getElementById(fieldId + cart[cartIndex]?.id);
+                    if (el) { el.focus(); el.select(); }
+                }, 30);
+            }
         }
-        renderCart();
-    }
 
-    function renderCart() {
-        const rows = document.getElementById('cartRows');
-        const emptyCart = document.getElementById('emptyCart');
-        const cartTable = document.getElementById('cartTable');
-        const submitBtn = document.getElementById('submitBtn');
-
-        if (!cart.length) {
-            emptyCart.style.display = 'block';
-            cartTable.style.display = 'none';
-            submitBtn.disabled = true;
-            return;
-        }
-        emptyCart.style.display = 'none';
-        cartTable.style.display = 'block';
-        submitBtn.disabled = false;
-
-        rows.innerHTML = cart.map((item, i) => {
-            const totalQty = (item.cartonQty * item.cartonSize) + item.looseQty;
-            const amount = (totalQty * item.price) - item.discount;
-            return `
-            <tr>
-                <td style="color:var(--c-text3);font-size:12px;">${i+1}</td>
-                <td>
-                    <div style="font-weight:600;font-size:13px;">${item.name}</div>
-                    <div style="font-size:11px;color:var(--c-text3);">Carton=${item.cartonSize} pcs</div>
-                </td>
-                <td>
-                    <input type="number" value="${item.cartonQty}" min="0" step="0.5"
-                        style="width:60px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
-                        onchange="cart[${i}].cartonQty=parseFloat(this.value)||0;renderCart()" />
-                </td>
-                <td>
-                    <input type="number" value="${item.looseQty}" min="0" step="0.5"
-                        style="width:60px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
-                        onchange="cart[${i}].looseQty=parseFloat(this.value)||0;renderCart()" />
-                </td>
-                <td>
-                    <input type="number" value="${item.price}" min="0" step="0.01"
-                        style="width:80px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
-                        onchange="cart[${i}].price=parseFloat(this.value)||0;renderCart()" />
-                </td>
-                <td>
-                    <input type="number" value="${item.discount}" min="0" step="0.01"
-                        style="width:70px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:'JetBrains Mono',monospace;font-size:12px;"
-                        onchange="cart[${i}].discount=parseFloat(this.value)||0;renderCart()" />
-                </td>
-                <td class="font-mono fw-semibold text-accent">Rs.${amount.toFixed(2)}</td>
-                <td>
-                    <button type="button" onclick="removeFromCart(${i})" class="btn btn-danger btn-xs btn-icon">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </td>
-            </tr>`;
-        }).join('');
-
-        calcTotal();
-        buildHiddenInputs();
-    }
-
-    function removeFromCart(i) {
-        cart.splice(i, 1);
-        renderCart();
-    }
-
-    function clearCart() {
-        if (cart.length && !confirm('Clear all items from cart?')) return;
-        cart = [];
-        renderCart();
-    }
-
-    function calcTotal() {
-        const subTotal = cart.reduce((sum, item) => {
-            const totalQty = (item.cartonQty * item.cartonSize) + item.looseQty;
-            return sum + (totalQty * item.price) - item.discount;
-        }, 0);
-        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
-        const tax = parseFloat(document.querySelector('[name="Tax"]').value) || 0;
-        const total = subTotal + tax - discount;
-
-        document.getElementById('dispSubTotal').textContent = 'Rs. ' + subTotal.toFixed(2);
-        document.getElementById('dispTotal').textContent = 'Rs. ' + total.toFixed(2);
-        document.getElementById('subTotalInput').value = subTotal.toFixed(2);
-        document.getElementById('paidInput').value = total.toFixed(2);
-        calcChange();
-    }
-
-    function calcChange() {
-        const total = parseFloat(document.getElementById('dispTotal').textContent.replace('Rs. ', '')) || 0;
-        const paid = parseFloat(document.getElementById('paidInput').value) || 0;
-        const change = paid - total;
-        const row = document.getElementById('changeRow');
-        if (paid > 0 && change >= 0) {
-            document.getElementById('dispChange').textContent = 'Rs. ' + change.toFixed(2);
-            row.style.display = 'block';
-        } else {
-            row.style.display = 'none';
-        }
-    }
-
-    function onSaleTypeChange() {
-        const type = document.getElementById('saleTypeSelect').value;
-        const custSelect = document.getElementById('customerId');
-        if (type === '2') {
-            custSelect.setAttribute('required', 'required');
-            custSelect.style.borderColor = 'var(--c-amber)';
-        } else {
-            custSelect.removeAttribute('required');
-            custSelect.style.borderColor = '';
-        }
-    }
-
-    function buildHiddenInputs() {
-        const container = document.getElementById('hiddenInputs');
-        container.innerHTML = cart.map((item, i) => `
-            <input type="hidden" name="productIds" value="${item.id}" />
-            <input type="hidden" name="cartonQtys" value="${item.cartonQty}" />
-            <input type="hidden" name="looseQtys" value="${item.looseQty}" />
-            <input type="hidden" name="prices" value="${item.price}" />
-            <input type="hidden" name="discounts" value="${item.discount}" />
-        `).join('');
-    }
-
-    // Form submit validation
-    document.getElementById('saleForm').addEventListener('submit', function(e) {
-        if (!cart.length) {
-            e.preventDefault();
-            alert('Please add at least one product to the cart.');
-            return;
-        }
-        buildHiddenInputs();
-    });
-</script>
+        document.getElementById('saleForm').addEventListener('submit', e => {
+            if (!cart.length) { e.preventDefault(); alert('Cart is empty.'); return; }
+            buildHiddenInputs();
+        });
+    </script>
 }

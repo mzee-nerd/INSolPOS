@@ -24,7 +24,12 @@
                         <td class="font-mono text-muted text-sm">@(v.CNIC ?? "—")</td>
                         <td class="text-right font-mono">@v.OpeningBalance.ToString("N2")</td>
                         <td class="text-muted text-sm">@v.RegisteredAt.ToString("dd MMM yy")</td>
-                        <td><a href="/Vendors/Edit/@v.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a></td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="/Vendors/Edit/@v.Id" class="btn btn-secondary btn-xs" title="Edit"><i class="fas fa-edit"></i></a>
+                                <a href="/Vendors/Ledger/@v.Id" class="btn btn-warning btn-xs" title="Vendor Ledger"><i class="fas fa-book"></i></a>
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>

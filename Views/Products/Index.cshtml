@@ -9,7 +9,7 @@
 <div class="flex justify-between items-center mb-4">
     <div class="flex gap-2">
         <a href="/Products/Categories" class="btn btn-secondary btn-sm"><i class="fas fa-tags"></i> Categories</a>
-        <a href="/Products/Units" class="btn btn-secondary btn-sm"><i class="fas fa-weight"></i> Units</a>
+        <a href="/Products/Units"      class="btn btn-secondary btn-sm"><i class="fas fa-weight"></i> Units</a>
     </div>
     <a href="/Products/Create" class="btn btn-primary"><i class="fas fa-plus"></i> Add Product</a>
 </div>
@@ -17,20 +17,19 @@
 <div class="card">
     <div class="card-header">
         <span class="card-title">Products (@Model.Count)</span>
-        <input type="text" id="searchBox" placeholder="Search products..." class="form-control" style="width:220px;" oninput="filterTable()" />
+        <input type="text" id="searchBox" placeholder="Search name / barcode..." class="form-control" style="width:220px;" oninput="filterTable()" />
     </div>
     <div class="table-wrap">
         <table id="prodTable">
             <thead>
                 <tr>
                     <th>Product</th>
-                    <th>Barcode</th>
                     <th>Category</th>
-                    <th>Unit</th>
-                    <th class="text-right">Purchase</th>
-                    <th class="text-right">Sale</th>
+                    <th class="text-center">Carton Size</th>
+                    <th class="text-right">Purchase Price<br/><span style="font-weight:400;font-size:10px;">(per loose unit)</span></th>
+                    <th class="text-right">Sale Price<br/><span style="font-weight:400;font-size:10px;">(per loose unit)</span></th>
                     <th class="text-right">Commission%</th>
-                    <th class="text-right">Stock</th>
+                    <th class="text-right">Stock (Carton+Loose)</th>
                     <th>Expiry</th>
                     <th>Actions</th>
                 </tr>
@@ -38,28 +37,48 @@
             <tbody>
                 @foreach (var p in Model)
                 {
+                    var cartonStock = p.CartonQty > 0 ? (int)Math.Floor(p.CurrentStock / p.CartonQty) : 0;
+                    var looseStock  = p.CartonQty > 0 ? p.CurrentStock % p.CartonQty : p.CurrentStock;
+                    var isLow       = p.CurrentStock <= p.MinStockLevel;
+                    var isExpired   = p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now;
+                    var isExpiring  = p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now.AddDays(30) && !isExpired;
                     <tr>
                         <td>
                             <div class="fw-semibold">@p.Name</div>
+                            <div class="text-xs text-muted font-mono">@(p.Barcode ?? "—")</div>
                             @if (!string.IsNullOrEmpty(p.BatchNo))
-                            {
-                                <div class="text-xs text-muted">Batch: @p.BatchNo</div>
-                            }
+                            { <div class="text-xs text-muted">Batch: @p.BatchNo</div> }
                         </td>
-                        <td class="font-mono text-muted text-sm">@(p.Barcode ?? "—")</td>
                         <td><span class="badge badge-info">@(p.Category?.Name ?? "—")</span></td>
-                        <td class="text-muted">@(p.Unit?.Name ?? "—")</td>
-                        <td class="text-right font-mono">@p.PurchasePrice.ToString("N2")</td>
-                        <td class="text-right font-mono text-accent fw-semibold">@p.SalePrice.ToString("N2")</td>
-                        <td class="text-right font-mono text-purple">@p.CommissionPercentage.ToString("N1")%</td>
-                        <td class="text-right font-mono @(p.CurrentStock <= p.MinStockLevel ? (p.CurrentStock == 0 ? "text-red" : "text-amber") : "text-green")">
-                            @p.CurrentStock.ToString("N2")
+                        <td class="text-center">
+                            <span class="badge badge-accent">@p.CartonQty @(p.Unit?.Abbreviation ?? "pcs")/ctn</span>
                         </td>
-                        <td class="font-mono text-sm @(p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now ? "text-red" : p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now.AddDays(30) ? "text-amber" : "text-muted")">
+                        <td class="text-right">
+                            <div class="font-mono text-sm">Rs. @p.PurchasePrice.ToString("N2")</div>
+                            <div class="text-xs text-muted">Ctn: Rs. @((p.PurchasePrice * p.CartonQty).ToString("N2"))</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-mono fw-semibold text-accent">Rs. @p.SalePrice.ToString("N2")</div>
+                            <div class="text-xs text-muted">Ctn: Rs. @((p.SalePrice * p.CartonQty).ToString("N2"))</div>
+                        </td>
+                        <td class="text-right font-mono" style="color:var(--c-purple);">@p.CommissionPercentage.ToString("N1")%</td>
+                        <td class="text-right">
+                            <div class="font-mono fw-bold @(p.CurrentStock == 0 ? "text-red" : isLow ? "text-amber" : "text-green")">
+                                @cartonStock ctn + @looseStock.ToString("N1") pcs
+                            </div>
+                            <div class="text-xs text-muted">(@p.CurrentStock.ToString("N2") total)</div>
+                        </td>
+                        <td class="font-mono text-sm @(isExpired ? "text-red" : isExpiring ? "text-amber" : "text-muted")">
                             @(p.ExpiryDate?.ToString("dd MMM yy") ?? "—")
                         </td>
                         <td>
-                            <a href="/Products/Edit/@p.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a>
+                            <div class="flex gap-1">
+                                <a href="/Products/Edit/@p.Id" class="btn btn-secondary btn-xs" title="Edit"><i class="fas fa-edit"></i></a>
+                                <form method="post" action="/Products/Delete/@p.Id" style="display:inline;"
+                                      onsubmit="return confirm('Delete \'@p.Name\'?\n\nProducts with sales/purchase history cannot be deleted.')">
+                                    <button type="submit" class="btn btn-danger btn-xs" title="Delete"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 }

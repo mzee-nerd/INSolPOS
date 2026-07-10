@@ -49,7 +49,8 @@
                         <td>
                             <div class="flex gap-1">
                                 <a href="/Staff/Edit/@s.Id" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i></a>
-                                <a href="/Staff/Salaries/@s.Id" class="btn btn-success btn-xs" title="Salaries"><i class="fas fa-money-check"></i></a>
+                                <a href="/Staff/Salaries/@s.Id" class="btn btn-success btn-xs" title="Salary History"><i class="fas fa-money-check"></i></a>
+                                <a href="/Staff/Ledger/@s.Id" class="btn btn-warning btn-xs" title="Salesman Ledger"><i class="fas fa-book"></i></a>
                                 <button onclick="openPaySalary(@s.Id, '@s.Name', @s.BasicSalary)" class="btn btn-primary btn-xs">
                                     <i class="fas fa-wallet"></i> Pay
                                 </button>

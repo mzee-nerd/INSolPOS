@@ -24,6 +24,7 @@ builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<ILedgerService, LedgerService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IVendorLedgerService, VendorLedgerService>();
 
 builder.Services.AddHttpContextAccessor();
 

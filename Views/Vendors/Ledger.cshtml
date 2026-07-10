@@ -1,17 +1,17 @@
 @using INSolPOS.Models
-@model List<CustomerLedger>
+@model List<VendorLedger>
 @{
-    ViewBag.Title = "Customer Ledger";
+    ViewBag.Title = "Vendor Ledger";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var customer = ViewBag.Customer as Customer;
-    var balance  = (decimal)(ViewBag.Balance ?? 0m);
+    var vendor  = ViewBag.Vendor  as Vendor;
+    var balance = (decimal)(ViewBag.Balance ?? 0m);
 }
 
 <div class="flex justify-between items-center mb-4 no-print">
-    <a href="/Customers/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="/Vendors/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
     <div class="flex gap-2">
         <form method="get" class="flex gap-2 items-center">
-            <input type="hidden" name="id" value="@customer?.Id" />
+            <input type="hidden" name="id" value="@vendor?.Id" />
             <input type="date" name="from" value="@ViewBag.From?.ToString("yyyy-MM-dd")" class="form-control" style="width:148px;" />
             <span class="text-muted">—</span>
             <input type="date" name="to"   value="@ViewBag.To?.ToString("yyyy-MM-dd")"   class="form-control" style="width:148px;" />
@@ -19,30 +19,29 @@
         </form>
         <button onclick="window.print()" class="btn btn-secondary btn-sm"><i class="fas fa-print"></i> Print</button>
         <button onclick="document.getElementById('payModal').classList.add('open')" class="btn btn-success btn-sm">
-            <i class="fas fa-money-bill-wave"></i> Receive Payment
+            <i class="fas fa-money-bill-wave"></i> Pay Vendor
         </button>
     </div>
 </div>
 
-<!-- Customer Info -->
+<!-- Vendor Info -->
 <div class="card mb-4">
     <div class="card-body" style="padding:16px 20px;">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;align-items:center;">
             <div>
-                <div class="text-xs text-muted mb-1">CUSTOMER</div>
-                <div class="fw-bold" style="font-size:16px;">@customer?.Name</div>
-                <div class="text-muted text-sm">@(customer?.Phone ?? "—")</div>
+                <div class="text-xs text-muted mb-1">VENDOR</div>
+                <div class="fw-bold" style="font-size:16px;">@vendor?.Name</div>
+                <div class="text-muted text-sm">@(vendor?.CompanyName ?? "—")</div>
             </div>
-            <div><div class="text-xs text-muted mb-1">ADDRESS</div><div class="text-sm">@(customer?.Address ?? "—")</div></div>
-            <div><div class="text-xs text-muted mb-1">CNIC</div><div class="font-mono text-sm">@(customer?.CNIC ?? "—")</div></div>
-            <div><div class="text-xs text-muted mb-1">CREDIT LIMIT</div><div class="font-mono fw-semibold">Rs. @customer?.CreditLimit.ToString("N2")</div></div>
+            <div><div class="text-xs text-muted mb-1">PHONE</div><div class="font-mono">@(vendor?.Phone ?? "—")</div></div>
+            <div><div class="text-xs text-muted mb-1">CNIC</div><div class="font-mono text-sm">@(vendor?.CNIC ?? "—")</div></div>
             <div>
-                <div class="text-xs text-muted mb-1">OUTSTANDING BALANCE</div>
+                <div class="text-xs text-muted mb-1">PAYABLE BALANCE</div>
                 <div class="font-mono fw-bold @(balance > 0 ? "text-red" : "text-green")" style="font-size:18px;">
                     Rs. @Math.Abs(balance).ToString("N2")
                 </div>
                 <div class="text-xs @(balance > 0 ? "text-red" : balance < 0 ? "text-green" : "text-muted")">
-                    @(balance > 0 ? "Customer Owes" : balance < 0 ? "Advance Paid" : "Settled")
+                    @(balance > 0 ? "We Owe Vendor" : balance < 0 ? "Vendor Owes Us" : "Settled")
                 </div>
             </div>
         </div>
@@ -52,7 +51,7 @@
 <!-- Ledger Table -->
 <div class="card">
     <div class="card-header">
-        <span class="card-title"><i class="fas fa-book text-accent" style="margin-right:8px;"></i>Account Ledger</span>
+        <span class="card-title"><i class="fas fa-book text-accent" style="margin-right:8px;"></i>Vendor Account Ledger</span>
         <span class="badge badge-info">@Model.Count entries</span>
     </div>
     <div class="table-wrap">
@@ -63,8 +62,8 @@
                     <th>Date</th>
                     <th>Description</th>
                     <th>Type</th>
-                    <th class="text-right">Debit (Sale)</th>
-                    <th class="text-right">Credit (Payment)</th>
+                    <th class="text-right">Debit (Payment)</th>
+                    <th class="text-right">Credit (Purchase)</th>
                     <th class="text-right">Balance</th>
                 </tr>
             </thead>
@@ -79,17 +78,17 @@
                         <td>
                             @switch (e.ReferenceType)
                             {
-                                case "Sale":       <span class="badge badge-warning">Sale</span>      break;
-                                case "Payment":    <span class="badge badge-success">Payment</span>   break;
-                                case "SaleReturn": <span class="badge badge-info">Return</span>       break;
-                                case "Opening":    <span class="badge badge-accent">Opening</span>    break;
-                                default:           <span class="badge">@e.ReferenceType</span>        break;
+                                case "Purchase":       <span class="badge badge-warning">Purchase</span>       break;
+                                case "Payment":        <span class="badge badge-success">Payment</span>        break;
+                                case "PurchaseReturn": <span class="badge badge-info">Return</span>            break;
+                                case "Opening":        <span class="badge badge-accent">Opening</span>         break;
+                                default:               <span class="badge">@e.ReferenceType</span>             break;
                             }
                         </td>
-                        <td class="text-right font-mono @(e.Debit > 0 ? "text-red" : "text-muted")">
+                        <td class="text-right font-mono @(e.Debit > 0 ? "text-green" : "text-muted")">
                             @(e.Debit > 0 ? "Rs. " + e.Debit.ToString("N2") : "—")
                         </td>
-                        <td class="text-right font-mono @(e.Credit > 0 ? "text-green" : "text-muted")">
+                        <td class="text-right font-mono @(e.Credit > 0 ? "text-red" : "text-muted")">
                             @(e.Credit > 0 ? "Rs. " + e.Credit.ToString("N2") : "—")
                         </td>
                         <td class="text-right font-mono fw-semibold @(e.Balance > 0 ? "text-amber" : e.Balance < 0 ? "text-green" : "text-muted")">
@@ -112,8 +111,8 @@
                 <tfoot>
                     <tr style="background:var(--c-surface2);font-weight:700;">
                         <td colspan="4">TOTALS</td>
-                        <td class="text-right font-mono text-red">Rs. @Model.Sum(e => e.Debit).ToString("N2")</td>
-                        <td class="text-right font-mono text-green">Rs. @Model.Sum(e => e.Credit).ToString("N2")</td>
+                        <td class="text-right font-mono text-green">Rs. @Model.Sum(e => e.Debit).ToString("N2")</td>
+                        <td class="text-right font-mono text-red">Rs. @Model.Sum(e => e.Credit).ToString("N2")</td>
                         <td class="text-right font-mono @(balance > 0 ? "text-amber" : "text-green")">
                             Rs. @balance.ToString("N2")
                         </td>
@@ -127,29 +126,17 @@
 <!-- Payment Modal -->
 <div class="modal-backdrop no-print" id="payModal">
     <div class="modal">
-        <div class="modal-title"><i class="fas fa-money-bill-wave text-green" style="margin-right:8px;"></i>Receive Payment from @customer?.Name</div>
-        <form method="post" action="/Customers/AddPayment">
-            <input type="hidden" name="customerId" value="@customer?.Id" />
+        <div class="modal-title"><i class="fas fa-money-bill-wave text-green" style="margin-right:8px;"></i>Pay Vendor — @vendor?.Name</div>
+        <form method="post" action="/Vendors/AddPayment">
+            <input type="hidden" name="vendorId" value="@vendor?.Id" />
             <div class="form-group mb-3">
                 <label class="form-label">AMOUNT (Rs.) *</label>
                 <input type="number" name="amount" class="form-control font-mono" min="0.01" step="0.01" required
                        value="@(balance > 0 ? balance.ToString("F2") : "0")" style="font-size:18px;" />
             </div>
-            <div class="form-group mb-3">
-                <label class="form-label">PAYMENT METHOD</label>
-                <select name="method" class="form-control">
-                    <option value="1">Cash</option>
-                    <option value="2">Bank Transfer</option>
-                    <option value="3">Cheque</option>
-                </select>
-            </div>
-            <div class="form-group mb-3">
-                <label class="form-label">CHEQUE / REFERENCE NO</label>
-                <input type="text" name="chequeNo" class="form-control font-mono" placeholder="Optional" />
-            </div>
             <div class="form-group mb-4">
                 <label class="form-label">NOTES</label>
-                <input type="text" name="notes" class="form-control" placeholder="Payment reference, bank, etc." />
+                <input type="text" name="notes" class="form-control" placeholder="Payment reference, cheque no, bank..." />
             </div>
             <div class="flex gap-2">
                 <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Payment</button>

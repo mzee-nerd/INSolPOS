@@ -6,131 +6,246 @@
     ViewBag.NavContext = "products";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var categories = ViewBag.Categories as List<Category> ?? new();
-    var units = ViewBag.Units as List<Unit> ?? new();
+    var units      = ViewBag.Units      as List<Unit>     ?? new();
+    var warehouses = ViewBag.Warehouses as List<Warehouse> ?? new();
 }
 
 <div class="flex gap-2 mb-4">
-    <a href="/Products/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Products</a>
+    <a href="/Products/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
 </div>
 
-<div class="card" style="max-width:900px;">
-    <div class="card-header">
-        <span class="card-title"><i class="fas fa-@(isEdit ? "edit" : "plus-circle") text-accent" style="margin-right:8px;"></i>@ViewBag.Title</span>
-    </div>
-    <div class="card-body">
-        <form method="post" action="/Products/@(isEdit ? "Edit" : "Create")">
-            @if (isEdit) { <input type="hidden" name="Id" value="@Model!.Id" /> }
+<form method="post" action="/Products/@(isEdit ? "Edit" : "Create")">
+    @if (isEdit) { <input type="hidden" name="Id" value="@Model!.Id" /> }
 
-            <div class="form-grid">
-                <div class="form-group" style="grid-column:span 2;">
-                    <label class="form-label">PRODUCT NAME *</label>
-                    <input type="text" name="Name" class="form-control" value="@Model?.Name" required placeholder="Enter product name" />
-                </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
 
-                <div class="form-group">
-                    <label class="form-label">BARCODE</label>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" name="Barcode" id="barcodeInput" class="form-control font-mono" value="@Model?.Barcode" placeholder="Auto-generate or enter" />
-                        <button type="button" class="btn btn-secondary" onclick="genBarcode()"><i class="fas fa-barcode"></i></button>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">CATEGORY *</label>
-                    <select name="CategoryId" class="form-control" required>
-                        <option value="">Select category...</option>
-                        @foreach (var c in categories)
-                        {
-                            <option value="@c.Id" selected="@(Model?.CategoryId == c.Id)">@c.Name</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">BASE UNIT *</label>
-                    <select name="UnitId" class="form-control" required>
-                        <option value="">Select unit...</option>
-                        @foreach (var u in units)
-                        {
-                            <option value="@u.Id" selected="@(Model?.UnitId == u.Id)">@u.Name (@u.Abbreviation)</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">CARTON QTY (pcs per carton)</label>
-                    <input type="number" name="CartonQty" class="form-control" value="@(Model?.CartonQty ?? 1)" min="1" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">PURCHASE PRICE (Rs.) *</label>
-                    <input type="number" name="PurchasePrice" class="form-control font-mono" value="@Model?.PurchasePrice" min="0" step="0.01" required />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">SALE PRICE (Rs.) *</label>
-                    <input type="number" name="SalePrice" class="form-control font-mono" value="@Model?.SalePrice" min="0" step="0.01" required />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">WHOLESALE PRICE (Rs.)</label>
-                    <input type="number" name="WholesalePrice" class="form-control font-mono" value="@Model?.WholesalePrice" min="0" step="0.01" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">COMMISSION % (for salesman)</label>
-                    <input type="number" name="CommissionPercentage" class="form-control font-mono" value="@Model?.CommissionPercentage" min="0" max="100" step="0.01" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">MIN STOCK LEVEL (alert below this)</label>
-                    <input type="number" name="MinStockLevel" class="form-control font-mono" value="@Model?.MinStockLevel" min="0" step="0.5" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">BATCH NO</label>
-                    <input type="text" name="BatchNo" class="form-control font-mono" value="@Model?.BatchNo" placeholder="e.g. BT-2024-001" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">EXPIRY DATE</label>
-                    <input type="date" name="ExpiryDate" class="form-control" value="@Model?.ExpiryDate?.ToString("yyyy-MM-dd")" />
-                </div>
-
-                @if (!isEdit)
-                {
-                    <div class="form-group">
-                        <label class="form-label">OPENING STOCK</label>
-                        <input type="number" name="CurrentStock" class="form-control font-mono" value="0" min="0" step="0.5" />
-                    </div>
-                }
-
-                <div class="form-group" style="grid-column:span 2;">
-                    <div style="display:flex;gap:20px;align-items:center;">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
-                            <input type="checkbox" name="TrackExpiry" value="true" @(Model?.TrackExpiry == true ? "checked" : "") style="width:16px;height:16px;" />
-                            Track expiry for this product
-                        </label>
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
-                            <input type="checkbox" name="IsActive" value="true" @(Model == null || Model.IsActive ? "checked" : "") style="width:16px;height:16px;" />
-                            Active
-                        </label>
+        <!-- LEFT: Basic Info -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="card">
+                <div class="card-header"><span class="card-title"><i class="fas fa-info-circle text-accent" style="margin-right:8px;"></i>Basic Information</span></div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column:span 2;">
+                            <label class="form-label">PRODUCT NAME *</label>
+                            <input type="text" name="Name" class="form-control" value="@Model?.Name" required placeholder="e.g. Nestle Milk 1Ltr" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">BARCODE</label>
+                            <div style="display:flex;gap:8px;">
+                                <input type="text" name="Barcode" id="barcodeInput" class="form-control font-mono" value="@Model?.Barcode" placeholder="Scan or auto-generate" />
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('barcodeInput').value='PRD'+Date.now().toString().slice(-10)"><i class="fas fa-barcode"></i></button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">CATEGORY *</label>
+                            <select name="CategoryId" class="form-control" required>
+                                <option value="">Select category...</option>
+                                @{
+                                    var catSel = Model?.CategoryId;
+                                }
+                                @foreach (var c in categories)
+                                {
+                                    if (catSel == c.Id)
+                                    {
+                                        <option value="@c.Id" selected>@c.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@c.Id">@c.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">BASE UNIT *</label>
+                            <select name="UnitId" class="form-control" required>
+                                <option value="">Select unit...</option>
+                                @{
+                                    var unitSel = Model?.UnitId;
+                                }
+                                @foreach (var u in units)
+                                {
+                                    if (unitSel == u.Id)
+                                    {
+                                        <option value="@u.Id" selected>@u.Name (@u.Abbreviation)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@u.Id">@u.Name (@u.Abbreviation)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">CARTON SIZE (loose units per carton)</label>
+                            <input type="number" name="CartonQty" id="cartonQty" class="form-control" value="@(Model?.CartonQty ?? 1)" min="1" oninput="calcCartonPrices()" />
+                            <div class="text-xs text-muted mt-1">e.g. 12 = 1 carton contains 12 pieces</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">MIN STOCK ALERT LEVEL</label>
+                            <input type="number" name="MinStockLevel" class="form-control font-mono" value="@Model?.MinStockLevel" min="0" step="0.5" />
+                        </div>
+                        <div class="form-group" style="grid-column:span 2;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+                                <input type="checkbox" name="TrackExpiry" value="true" @(Model?.TrackExpiry == true ? "checked" : "") style="width:16px;height:16px;" />
+                                Track expiry for this product
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> @(isEdit ? "Update" : "Save") Product</button>
-                <a href="/Products/Index" class="btn btn-secondary">Cancel</a>
+            <div class="card">
+                <div class="card-header"><span class="card-title"><i class="fas fa-calendar-alt text-amber" style="margin-right:8px;"></i>Batch &amp; Expiry</span></div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">BATCH NO</label>
+                            <input type="text" name="BatchNo" class="form-control font-mono" value="@Model?.BatchNo" placeholder="e.g. BT-2025-001" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">EXPIRY DATE</label>
+                            <input type="date" name="ExpiryDate" class="form-control" value="@Model?.ExpiryDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                </div>
             </div>
-        </form>
+
+            @if (!isEdit)
+            {
+                <div class="card">
+                    <div class="card-header"><span class="card-title"><i class="fas fa-boxes text-green" style="margin-right:8px;"></i>Opening Stock</span></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">OPENING STOCK (in loose units)</label>
+                            <input type="number" name="CurrentStock" class="form-control font-mono" value="0" min="0" step="0.5" />
+                            <div class="text-xs text-muted mt-1">Enter total loose units. e.g. for 5 cartons of 12 each → enter 60</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- RIGHT: Pricing -->
+        <div>
+            <div class="card" style="position:sticky;top:80px;">
+                <div class="card-header">
+                    <span class="card-title"><i class="fas fa-tags text-accent" style="margin-right:8px;"></i>Pricing</span>
+                </div>
+                <div class="card-body">
+                    <div style="background:rgba(79,110,247,0.08);border:1px solid rgba(79,110,247,0.2);border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:var(--c-text2);">
+                        <strong style="color:var(--c-accent);">Pricing Guide:</strong><br/>
+                        Enter the <strong>carton price</strong> (what you buy/sell a full carton for).<br/>
+                        Loose unit price is <strong>auto-calculated</strong> as: carton price ÷ carton size.
+                    </div>
+
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--c-text3);letter-spacing:0.1em;margin-bottom:10px;">
+                        <i class="fas fa-truck-loading" style="margin-right:4px;"></i> Purchase / Cost Price
+                    </div>
+                    <div class="form-group mb-2">
+                        <label class="form-label">CARTON PURCHASE PRICE *</label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--c-text3);font-size:12px;">Rs.</span>
+                            <input type="number" name="CartonPurchasePriceInput" id="cartonPurchasePrice" class="form-control font-mono" style="padding-left:32px;"
+                                   value="@(Model != null && Model.CartonQty > 0 ? (Model.PurchasePrice * Model.CartonQty).ToString("F2") : "")"
+                                   min="0" step="0.01" required oninput="calcLoosePrices()" placeholder="0.00" />
+                        </div>
+                        <div class="text-xs text-muted mt-1">Price you pay per full carton</div>
+                    </div>
+                    <div style="background:var(--c-surface2);border:1px solid var(--c-border);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:13px;">
+                        <div class="flex justify-between">
+                            <span class="text-muted">Loose purchase price (auto):</span>
+                            <span class="font-mono fw-semibold text-accent" id="calcLooseBuy">Rs. 0.00</span>
+                        </div>
+                    </div>
+                    <input type="hidden" name="PurchasePrice" id="purchasePrice" value="@Model?.PurchasePrice" />
+
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--c-text3);letter-spacing:0.1em;margin-bottom:10px;">
+                        <i class="fas fa-cash-register" style="margin-right:4px;"></i> Sale / Retail Price
+                    </div>
+                    <div class="form-group mb-2">
+                        <label class="form-label">CARTON SALE PRICE *</label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--c-text3);font-size:12px;">Rs.</span>
+                            <input type="number" name="CartonSalePriceInput" id="cartonSalePrice" class="form-control font-mono" style="padding-left:32px;"
+                                   value="@(Model != null && Model.CartonQty > 0 ? (Model.SalePrice * Model.CartonQty).ToString("F2") : "")"
+                                   min="0" step="0.01" required oninput="calcLoosePrices()" placeholder="0.00" />
+                        </div>
+                        <div class="text-xs text-muted mt-1">Price you sell per full carton</div>
+                    </div>
+                    <div style="background:var(--c-surface2);border:1px solid var(--c-border);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:13px;">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-muted">Loose sale price (auto):</span>
+                            <span class="font-mono fw-semibold text-accent" id="calcLooseSell">Rs. 0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-muted">Margin per loose unit:</span>
+                            <span class="font-mono fw-semibold" id="marginDisp">—</span>
+                        </div>
+                    </div>
+                    <input type="hidden" name="SalePrice" id="salePrice" value="@Model?.SalePrice" />
+
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--c-text3);letter-spacing:0.1em;margin-bottom:10px;">
+                        <i class="fas fa-store" style="margin-right:4px;"></i> Wholesale Price (optional)
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="form-label">WHOLESALE PRICE PER LOOSE UNIT</label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--c-text3);font-size:12px;">Rs.</span>
+                            <input type="number" name="WholesalePrice" class="form-control font-mono" style="padding-left:32px;"
+                                   value="@Model?.WholesalePrice" min="0" step="0.01" placeholder="0.00" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="form-label">SALESMAN COMMISSION %</label>
+                        <input type="number" name="CommissionPercentage" class="form-control font-mono"
+                               value="@Model?.CommissionPercentage" min="0" max="100" step="0.1" placeholder="0.0" />
+                        <div class="text-xs text-muted mt-1">% of sale amount paid to salesman per sale</div>
+                    </div>
+
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;margin-bottom:16px;">
+                        <input type="checkbox" name="IsActive" value="true" @(Model == null || Model.IsActive ? "checked" : "") style="width:16px;height:16px;" />
+                        Active (available for sale/purchase)
+                    </label>
+
+                    <div class="flex gap-2">
+                        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:12px;font-size:14px;">
+                            <i class="fas fa-save"></i> @(isEdit ? "Update" : "Save") Product
+                        </button>
+                        <a href="/Products/Index" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</form>
 
 @section Scripts {
 <script>
-    function genBarcode() {
-        document.getElementById('barcodeInput').value = 'PRD' + Date.now().toString().slice(-10);
+function calcLoosePrices() {
+    const ctn       = parseInt(document.getElementById('cartonQty')?.value) || 1;
+    const cartonBuy = parseFloat(document.getElementById('cartonPurchasePrice')?.value) || 0;
+    const cartonSell= parseFloat(document.getElementById('cartonSalePrice')?.value) || 0;
+    const looseBuy  = ctn > 0 ? (cartonBuy  / ctn) : 0;
+    const looseSell = ctn > 0 ? (cartonSell / ctn) : 0;
+    const margin    = looseBuy > 0 ? (((looseSell - looseBuy) / looseBuy) * 100).toFixed(1) : null;
+
+    document.getElementById('calcLooseBuy').textContent  = 'Rs. ' + looseBuy.toFixed(4);
+    document.getElementById('calcLooseSell').textContent = 'Rs. ' + looseSell.toFixed(4);
+
+    // Write to hidden fields so model binding works
+    document.getElementById('purchasePrice').value = looseBuy.toFixed(4);
+    document.getElementById('salePrice').value     = looseSell.toFixed(4);
+
+    if (margin !== null) {
+        const el = document.getElementById('marginDisp');
+        el.textContent = margin + '%';
+        el.style.color = parseFloat(margin) >= 0 ? 'var(--c-green)' : 'var(--c-red)';
     }
+}
+document.addEventListener('DOMContentLoaded', calcLoosePrices);
+// Recalculate when carton size changes
+document.getElementById('cartonQty')?.addEventListener('input', calcLoosePrices);
 </script>
 }

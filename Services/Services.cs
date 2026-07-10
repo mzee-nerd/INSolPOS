@@ -234,6 +234,7 @@ namespace INSolPOS.Services
     {
         Task AddEntryAsync(int customerId, string desc, decimal debit, decimal credit, string refType, int refId);
         Task<List<CustomerLedger>> GetCustomerLedgerAsync(int customerId);
+        Task<List<CustomerLedger>> GetCustomerLedgerAsync(int customerId, DateTime? from, DateTime? to);
         Task<decimal> GetCustomerBalanceAsync(int customerId);
     }
 
@@ -262,7 +263,15 @@ namespace INSolPOS.Services
 
         public async Task<List<CustomerLedger>> GetCustomerLedgerAsync(int customerId) =>
             await _db.CustomerLedgers.Where(l => l.CustomerId == customerId)
-                .OrderBy(l => l.Date).ToListAsync();
+                .OrderBy(l => l.Date).ThenBy(l => l.Id).ToListAsync();
+
+        public async Task<List<CustomerLedger>> GetCustomerLedgerAsync(int customerId, DateTime? from, DateTime? to)
+        {
+            var q = _db.CustomerLedgers.Where(l => l.CustomerId == customerId);
+            if (from.HasValue) q = q.Where(l => l.Date >= from.Value);
+            if (to.HasValue)   q = q.Where(l => l.Date <= to.Value.AddDays(1));
+            return await q.OrderBy(l => l.Date).ThenBy(l => l.Id).ToListAsync();
+        }
 
         public async Task<decimal> GetCustomerBalanceAsync(int customerId)
         {
@@ -498,5 +507,51 @@ namespace INSolPOS.Services
         public decimal TotalCredit => Capital + TotalSales - SaleReturns + Payables
                                     + (NetProfit > 0 ? NetProfit : 0);              // net profit on Cr side
         public decimal Discrepancy => TotalDebit - TotalCredit;
+    }
+
+    // ─────────────── VENDOR LEDGER SERVICE ───────────────
+    public interface IVendorLedgerService
+    {
+        Task AddEntryAsync(int vendorId, string desc, decimal debit, decimal credit, string refType, int refId);
+        Task<List<VendorLedger>> GetLedgerAsync(int vendorId, DateTime? from = null, DateTime? to = null);
+        Task<decimal> GetBalanceAsync(int vendorId);
+    }
+
+    public class VendorLedgerService : IVendorLedgerService
+    {
+        private readonly AppDbContext _db;
+        public VendorLedgerService(AppDbContext db) => _db = db;
+
+        public async Task AddEntryAsync(int vendorId, string desc, decimal debit, decimal credit, string refType, int refId)
+        {
+            var balance = await GetBalanceAsync(vendorId);
+            _db.VendorLedgers.Add(new VendorLedger
+            {
+                VendorId      = vendorId,
+                Description   = desc,
+                Debit         = debit,
+                Credit        = credit,
+                Balance       = balance + credit - debit,  // credit = we owe more, debit = we paid
+                ReferenceType = refType,
+                ReferenceId   = refId,
+                Date          = DateTime.Now
+            });
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task<List<VendorLedger>> GetLedgerAsync(int vendorId, DateTime? from = null, DateTime? to = null)
+        {
+            var q = _db.VendorLedgers.Where(l => l.VendorId == vendorId);
+            if (from.HasValue) q = q.Where(l => l.Date >= from.Value);
+            if (to.HasValue)   q = q.Where(l => l.Date <= to.Value.AddDays(1));
+            return await q.OrderBy(l => l.Date).ThenBy(l => l.Id).ToListAsync();
+        }
+
+        public async Task<decimal> GetBalanceAsync(int vendorId)
+        {
+            var last = await _db.VendorLedgers.Where(l => l.VendorId == vendorId)
+                .OrderByDescending(l => l.Id).FirstOrDefaultAsync();
+            return last?.Balance ?? 0;
+        }
     }
 }

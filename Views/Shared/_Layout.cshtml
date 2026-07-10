@@ -903,6 +903,19 @@
             </div>
 
             <div class="nav-section">
+                <div class="nav-section-label">Ledgers</div>
+                <a href="/Customers/Index" class="nav-item @(ctx == "cust-ledger" ? "active" : "")" title="Select customer then click Ledger">
+                    <i class="fas fa-book-open"></i> Customer Ledger
+                </a>
+                <a href="/Vendors/Index" class="nav-item @(ctx == "vend-ledger" ? "active" : "")" title="Select vendor then click Ledger">
+                    <i class="fas fa-book"></i> Vendor Ledger
+                </a>
+                <a href="/Staff/Index" class="nav-item @(ctx == "staff-ledger" ? "active" : "")" title="Select salesman then click Ledger">
+                    <i class="fas fa-user-tag"></i> Salesman Ledger
+                </a>
+            </div>
+
+            <div class="nav-section">
                 <div class="nav-section-label">Finance</div>
                 <a href="/Capital/Index" class="nav-item @(ctx == "capital" ? "active" : "")">
                     <i class="fas fa-coins"></i> Capital
