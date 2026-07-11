@@ -15,7 +15,7 @@
         <div class="card-header"><span class="card-title">Product Categories</span></div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>#</th><th>Name</th><th>Products</th></tr></thead>
+                <thead><tr><th>#</th><th>Name</th><th>Products</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var c in Model)
                     {
@@ -23,6 +23,12 @@
                             <td class="text-muted text-sm">@c.Id</td>
                             <td class="fw-semibold">@c.Name</td>
                             <td><span class="badge badge-accent">@c.Products.Count</span></td>
+                            <td>
+                                <button class="btn btn-secondary btn-xs"
+                                        onclick="openEditCat(@c.Id, '@Html.Raw(c.Name.Replace("'","\\\'"))')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -43,3 +49,36 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Category Modal -->
+<div class="modal-backdrop" id="editCatModal">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-edit text-accent" style="margin-right:8px;"></i>Edit Category</div>
+        <form method="post" action="/Products/EditCategory">
+            <input type="hidden" name="id" id="editCatId" />
+            <div class="form-group mb-4">
+                <label class="form-label">CATEGORY NAME *</label>
+                <input type="text" name="name" id="editCatName" class="form-control" required />
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('editCatModal').classList.remove('open')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditCat(id, name) {
+            document.getElementById('editCatId').value = id;
+            document.getElementById('editCatName').value = name;
+            document.getElementById('editCatModal').classList.add('open');
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(el =>
+            el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+    </script>
+}

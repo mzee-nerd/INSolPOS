@@ -41,13 +41,19 @@
                             </div>
                         }
                     </div>
-                    <!-- Delete button top-right -->
-                    <form method="post" action="/Warehouse/Delete/@w.Id" style="display:inline;"
-                          onsubmit="return confirm('Delete warehouse \'@w.Name\'?\n\nThis will deactivate the warehouse. Warehouses with stock or transaction history cannot be deleted.')">
-                        <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete Warehouse">
-                            <i class="fas fa-trash"></i>
+                    <!-- Edit + Delete buttons -->
+                    <div class="flex gap-1">
+                        <button class="btn btn-secondary btn-xs btn-icon" title="Edit Warehouse"
+                                onclick="openEditWH(@w.Id, '@Html.Raw(w.Name.Replace("'","\\\'"))', '@Html.Raw((w.Location??"").Replace("'","\\\'"))', '@Html.Raw((w.ManagerName??"").Replace("'","\\\'"))')">
+                            <i class="fas fa-edit"></i>
                         </button>
-                    </form>
+                        <form method="post" action="/Warehouse/Delete/@w.Id" style="display:inline;"
+                              onsubmit="return confirm('Delete warehouse \'@w.Name\'?\n\nThis will deactivate the warehouse. Warehouses with stock or transaction history cannot be deleted.')">
+                            <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete Warehouse">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="flex gap-2">
@@ -90,15 +96,53 @@
             <div class="flex gap-2">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Warehouse</button>
                 <button type="button" class="btn btn-secondary"
-                        onclick="document.getElementById('addWH').classList.remove('open')">Cancel</button>
+                        onclick="document.getElementById('addWH').classList.remove('open')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Warehouse Modal -->
+<div class="modal-backdrop" id="editWHModal">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-warehouse text-accent" style="margin-right:8px;"></i>Edit Warehouse</div>
+        <form method="post" action="/Warehouse/Edit">
+            <input type="hidden" name="id" id="editWHId" />
+            <div class="form-group mb-3">
+                <label class="form-label">NAME *</label>
+                <input type="text" name="name" id="editWHName" class="form-control" required />
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label">LOCATION</label>
+                <input type="text" name="location" id="editWHLocation" class="form-control" />
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">MANAGER NAME</label>
+                <input type="text" name="managerName" id="editWHManager" class="form-control" />
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('editWHModal').classList.remove('open')">
+                    Cancel
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 @section Scripts {
-<script>
-document.querySelectorAll('.modal-backdrop').forEach(el =>
-    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
-</script>
+    <script>
+        function openEditWH(id, name, location, manager) {
+            document.getElementById('editWHId').value      = id;
+            document.getElementById('editWHName').value    = name;
+            document.getElementById('editWHLocation').value= location;
+            document.getElementById('editWHManager').value = manager;
+            document.getElementById('editWHModal').classList.add('open');
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(el =>
+            el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+    </script>
 }

@@ -37,12 +37,18 @@
                         <div class="fw-bold font-mono" style="font-size:16px;color:var(--c-accent);">@v.VehicleNo</div>
                         <div class="text-muted text-sm">@(v.Model ?? "Unknown Model")</div>
                     </div>
-                    <form method="post" action="/Vehicles/Delete/@v.Id" style="display:inline;"
-                          onsubmit="return confirm('Delete vehicle \'@v.VehicleNo\'?\n\nVehicles with active loads cannot be deleted.')">
-                        <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete Vehicle">
-                            <i class="fas fa-trash"></i>
+                    <div class="flex gap-1">
+                        <button class="btn btn-secondary btn-xs btn-icon" title="Edit Vehicle"
+                                onclick="openEditVehicle(@v.Id, '@Html.Raw(v.VehicleNo.Replace("'","\\\'"))', '@Html.Raw((v.Model??"").Replace("'","\\\'"))', '@Html.Raw((v.DriverName??"").Replace("'","\\\'"))', '@Html.Raw((v.DriverPhone??"").Replace("'","\\\'"))')">
+                            <i class="fas fa-edit"></i>
                         </button>
-                    </form>
+                        <form method="post" action="/Vehicles/Delete/@v.Id" style="display:inline;"
+                              onsubmit="return confirm('Delete vehicle \'@v.VehicleNo\'?\n\nVehicles with active loads cannot be deleted.')">
+                            <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete Vehicle">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Driver Info -->
@@ -124,15 +130,60 @@
             <div class="flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Register</button>
                 <button type="button" class="btn btn-secondary"
-                        onclick="document.getElementById('addVehicle').classList.remove('open')">Cancel</button>
+                        onclick="document.getElementById('addVehicle').classList.remove('open')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Vehicle Modal -->
+<div class="modal-backdrop" id="editVehicleModal">
+    <div class="modal">
+        <div class="modal-title"><i class="fas fa-truck text-purple" style="margin-right:8px;"></i>Edit Vehicle</div>
+        <form method="post" action="/Vehicles/Edit">
+            <input type="hidden" name="id" id="editVehId" />
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">VEHICLE NO / PLATE *</label>
+                    <input type="text" name="vehicleNo" id="editVehNo" class="form-control font-mono" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">MODEL / TYPE</label>
+                    <input type="text" name="model" id="editVehModel" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DRIVER NAME</label>
+                    <input type="text" name="driverName" id="editVehDriver" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DRIVER PHONE</label>
+                    <input type="text" name="driverPhone" id="editVehPhone" class="form-control font-mono" />
+                </div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('editVehicleModal').classList.remove('open')">
+                    Cancel
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 @section Scripts {
-<script>
-document.querySelectorAll('.modal-backdrop').forEach(el =>
-    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
-</script>
+    <script>
+        function openEditVehicle(id, vehicleNo, model, driverName, driverPhone) {
+            document.getElementById('editVehId').value    = id;
+            document.getElementById('editVehNo').value    = vehicleNo;
+            document.getElementById('editVehModel').value = model;
+            document.getElementById('editVehDriver').value= driverName;
+            document.getElementById('editVehPhone').value = driverPhone;
+            document.getElementById('editVehicleModal').classList.add('open');
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(el =>
+            el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+    </script>
 }

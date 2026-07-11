@@ -383,12 +383,26 @@ namespace INSolPOS.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUnit(Unit unit)
         { _db.Units.Add(unit); await _db.SaveChangesAsync(); TempData["Success"] = "Unit added."; return RedirectToAction("Units"); }
+        [HttpPost]
+        public async Task<IActionResult> EditUnit(int id, string name, string abbreviation)
+        {
+            var u = await _db.Units.FindAsync(id);
+            if (u != null) { u.Name = name; u.Abbreviation = abbreviation; await _db.SaveChangesAsync(); TempData["Success"] = "Unit updated."; }
+            return RedirectToAction("Units");
+        }
 
         public async Task<IActionResult> Categories() =>
             View(await _db.Categories.Include(c => c.Products).ToListAsync());
         [HttpPost]
         public async Task<IActionResult> CreateCategory(Category category)
         { _db.Categories.Add(category); await _db.SaveChangesAsync(); TempData["Success"] = "Category added."; return RedirectToAction("Categories"); }
+        [HttpPost]
+        public async Task<IActionResult> EditCategory(int id, string name)
+        {
+            var cat = await _db.Categories.FindAsync(id);
+            if (cat != null) { cat.Name = name; await _db.SaveChangesAsync(); TempData["Success"] = "Category updated."; }
+            return RedirectToAction("Categories");
+        }
 
         // FIXED: Search API returns all fields the JS needs with correct property names
         [HttpGet]
@@ -456,6 +470,13 @@ namespace INSolPOS.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Warehouse w)
         { _db.Warehouses.Add(w); await _db.SaveChangesAsync(); TempData["Success"] = "Warehouse added."; return RedirectToAction("Index"); }
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, string name, string? location, string? managerName)
+        {
+            var wh = await _db.Warehouses.FindAsync(id);
+            if (wh != null) { wh.Name = name; wh.Location = location; wh.ManagerName = managerName; await _db.SaveChangesAsync(); TempData["Success"] = "Warehouse updated."; }
+            return RedirectToAction("Index");
+        }
         public async Task<IActionResult> Stock(int id)
         {
             var wh = await _db.Warehouses.FindAsync(id);
@@ -528,6 +549,13 @@ namespace INSolPOS.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Vehicle v)
         { _db.Vehicles.Add(v); await _db.SaveChangesAsync(); TempData["Success"] = "Vehicle registered."; return RedirectToAction("Index"); }
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, string vehicleNo, string? model, string? driverName, string? driverPhone)
+        {
+            var v = await _db.Vehicles.FindAsync(id);
+            if (v != null) { v.VehicleNo = vehicleNo; v.Model = model; v.DriverName = driverName; v.DriverPhone = driverPhone; await _db.SaveChangesAsync(); TempData["Success"] = "Vehicle updated."; }
+            return RedirectToAction("Index");
+        }
         public async Task<IActionResult> LoadVehicle(int id)
         {
             ViewBag.Vehicle = await _db.Vehicles.FindAsync(id);

@@ -40,14 +40,23 @@
                         <td class="text-muted text-sm">@s.SaleDate.ToString("dd MMM yy HH:mm")</td>
                         <td class="fw-semibold">@(s.Customer?.Name ?? "Walk-in")</td>
                         <td>
-                            @if (s.SaleType == SaleType.Cash)        { <span class="badge badge-success">Cash</span>      }
-                            else if (s.SaleType == SaleType.Credit)  { <span class="badge badge-warning">Credit</span>    }
-                            else                                      { <span class="badge badge-info">Wholesale</span>   }
+                            @if (s.SaleType == SaleType.Cash)
+                            {
+                                <span class="badge badge-success">Cash</span>
+                            }
+                            else if (s.SaleType == SaleType.Credit)
+                            {
+                                <span class="badge badge-warning">Credit</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-info">Wholesale</span>
+                            }
                         </td>
                         <td class="text-right font-mono">Rs. @s.TotalAmount.ToString("N2")</td>
                         <td class="text-right font-mono text-green">Rs. @s.PaidAmount.ToString("N2")</td>
                         <td>
-                            <a href="/SaleReturns/FromSale/@s.Id" class="btn btn-warning btn-sm">
+                            <a href="/SaleReturns/FromSale?saleId=@s.Id" class="btn btn-warning btn-sm">
                                 <i class="fas fa-undo"></i> Return
                             </a>
                         </td>
@@ -63,12 +72,12 @@
 </div>
 
 @section Scripts {
-<script>
-function filterTable() {
-    const q = document.getElementById('searchBox').value.toLowerCase();
-    document.querySelectorAll('#saleTable tbody tr').forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-}
-</script>
+    <script>
+        function filterTable() {
+            const q = document.getElementById('searchBox').value.toLowerCase();
+            document.querySelectorAll('#saleTable tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+    </script>
 }
