@@ -150,24 +150,24 @@
             tr.id = 'row_' + id;
             tr.innerHTML = `
                 <td>
-                    <select name="productIds" class="form-control" style="min-width:160px;font-size:12px;"
+                    <select name="productIds" form="purchForm" class="form-control" style="min-width:160px;font-size:12px;"
                             onchange="onProductChange(this, ${id})">
                         <option value="">Select product...</option>
                         ${opts}
                     </select>
                 </td>
-                <td><input type="number" name="cartonQtys" value="0" min="0" step="0.5"
+                <td><input type="number" name="cartonQtys" form="purchForm" value="0" min="0" step="0.5"
                     class="form-control font-mono" style="width:72px;font-size:12px;"
                     oninput="calcRow(${id})" id="carton_${id}" /></td>
-                <td><input type="number" name="looseQtys" value="0" min="0" step="0.5"
+                <td><input type="number" name="looseQtys" form="purchForm" value="0" min="0" step="0.5"
                     class="form-control font-mono" style="width:72px;font-size:12px;"
                     oninput="calcRow(${id})" id="loose_${id}" /></td>
-                <td><input type="number" name="prices" value="0" min="0" step="0.01"
+                <td><input type="number" name="prices" form="purchForm" value="0" min="0" step="0.01"
                     class="form-control font-mono" style="width:100px;font-size:12px;"
                     oninput="calcRow(${id})" id="price_${id}" /></td>
-                <td><input type="text" name="batchNos" placeholder="Batch#"
+                <td><input type="text" name="batchNos" form="purchForm" placeholder="Batch#"
                     class="form-control" style="width:82px;font-size:12px;" id="batch_${id}" /></td>
-                <td><input type="date" name="expiryDates"
+                <td><input type="date" name="expiryDates" form="purchForm"
                     class="form-control" style="width:115px;font-size:12px;" id="expiry_${id}" /></td>
                 <td class="font-mono fw-semibold text-accent text-right" id="amt_${id}">0.00</td>
                 <td><button type="button" onclick="removeRow(${id})" class="btn btn-danger btn-xs btn-icon">
