@@ -1,0 +1,80 @@
+@using INSolPOS.Models
+@{
+    ViewBag.Title = "Add Expense";
+    ViewBag.NavContext = "expenses";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var expCats = ViewBag.ExpenseCategories as List<ExpenseCategory> ?? new();
+}
+
+<div class="flex gap-2 mb-4">
+    <a href="/Expenses/Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="max-width:560px;margin:0 auto;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-plus-circle text-red" style="margin-right:8px;"></i>Add Expense</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/Expenses/Add">
+                <div class="form-group mb-3">
+                    <label class="form-label">EXPENSE TITLE *</label>
+                    <input type="text" name="Title" class="form-control" required autofocus
+                           placeholder="e.g. Electricity Bill, Rent, Vehicle Fuel..." />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label">CATEGORY</label>
+                    <select name="Category" class="form-control">
+                        <option value="">— Select category —</option>
+                        @foreach (var cat in expCats)
+                        {
+                            <option value="@cat.Name">@cat.Name</option>
+                        }
+                    </select>
+                    @if (!expCats.Any())
+                    {
+                        <div class="text-xs text-amber mt-1">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            No categories yet. <a href="/Expenses/Categories" class="text-accent">Add categories first.</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-xs text-muted mt-1">
+                            <a href="/Expenses/Categories" class="text-accent"><i class="fas fa-cog" style="font-size:10px;"></i> Manage categories</a>
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label">AMOUNT (Rs.) *</label>
+                    <div style="position:relative;">
+                        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--c-text3);font-size:12px;">Rs.</span>
+                        <input type="number" name="Amount" class="form-control font-mono" style="padding-left:32px;"
+                               required min="0.01" step="0.01" placeholder="0.00" />
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label">DATE &amp; TIME</label>
+                    <input type="datetime-local" name="Date" class="form-control"
+                           value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="form-label">NOTES</label>
+                    <textarea name="Notes" class="form-control" rows="3"
+                              placeholder="Optional — payment method, vendor name, reference no..."></textarea>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-danger" style="flex:1;justify-content:center;font-size:14px;padding:12px;">
+                        <i class="fas fa-save"></i> Record Expense
+                    </button>
+                    <a href="/Expenses/Index" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -3,6 +3,14 @@
 @{
     ViewBag.Title = "Sale Receipt";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var s = ViewBag.Settings as CompanySettings;
+    var bizName   = s?.BusinessName  ?? "INSol POS";
+    var tagline   = s?.Tagline       ?? "Point of Sale System";
+    var address   = s?.Address;
+    var phone     = s?.Phone;
+    var footer    = s?.InvoiceFooter ?? "Thank you for your business!";
+    var logoPath  = s?.LogoPath;
+    var currency  = s?.Currency      ?? "Rs.";
 }
 
 <div class="flex justify-between items-center mb-4 no-print">
@@ -16,8 +24,18 @@
 <div style="max-width:600px;margin:0 auto;">
     <div class="card receipt-print">
         <div style="text-align:center;padding:24px 24px 16px;border-bottom:1px solid var(--c-border);">
-            <div style="font-size:22px;font-weight:800;color:var(--c-accent);">INSol POS</div>
-            <div style="font-size:12px;color:var(--c-text3);margin-top:4px;">Sales Receipt</div>
+            @if (!string.IsNullOrEmpty(logoPath))
+            {
+                <img src="@logoPath" alt="Logo"
+                     style="height:64px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;" />
+            }
+            <div style="font-size:22px;font-weight:800;color:var(--c-accent);">@bizName</div>
+            @if (!string.IsNullOrEmpty(tagline))
+            {   <div style="font-size:12px;color:var(--c-text3);margin-top:2px;">@tagline</div> }
+            @if (!string.IsNullOrEmpty(address))
+            {   <div style="font-size:11px;color:var(--c-text3);margin-top:2px;">@address</div> }
+            @if (!string.IsNullOrEmpty(phone))
+            {   <div style="font-size:11px;color:var(--c-text3);">Tel: @phone</div> }
         </div>
 
         <div style="padding:16px 24px;border-bottom:1px solid var(--c-border);">
@@ -134,8 +152,8 @@
         </div>
 
         <div style="text-align:center;padding:16px 24px;border-top:1px solid var(--c-border);color:var(--c-text3);font-size:12px;">
-            Thank you for your business!<br/>
-            <span class="font-mono" style="font-size:11px;">@Model.InvoiceNo</span>
+            @footer<br/>
+            <span class="font-mono" style="font-size:11px;">@Model.InvoiceNo | @bizName</span>
         </div>
     </div>
 </div>

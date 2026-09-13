@@ -865,6 +865,9 @@
                 <a href="/Purchases/Index" class="nav-item @(ctx == "purchases" ? "active" : "")">
                     <i class="fas fa-truck-loading"></i> Purchases
                 </a>
+                <a href="/Purchases/Returns" class="nav-item @(ctx == "purchase-returns" ? "active" : "")">
+                    <i class="fas fa-undo"></i> Purchase Returns
+                </a>
             </div>
 
             <div class="nav-section">
@@ -926,6 +929,9 @@
                 <a href="/Expenses" class="nav-item @(ctx == "expenses" ? "active" : "")">
                     <i class="fas fa-file-invoice-dollar"></i> Expenses
                 </a>
+                <a href="/Expenses/Categories" class="nav-item @(ctx == "expense-categories" ? "active" : "")">
+                    <i class="fas fa-tags"></i> Expense Categories
+                </a>
             </div>
 
             <div class="nav-section">
@@ -952,13 +958,21 @@
 
             @if (ViewBag.CurrentUserRole?.ToString() is "SuperAdmin" or "Admin")
             {
-                <div class="nav-section">
-                    <div class="nav-section-label">Administration</div>
-                    <a href="/Users/Index" class="nav-item @(ctx == "users" ? "active" : "")">
-                        <i class="fas fa-user-shield"></i> User Management
-                    </a>
-                </div>
+                    <div class="nav-section">
+                        <div class="nav-section-label">Administration</div>
+                        <a href="/Users/Index" class="nav-item @(ctx == "users" ? "active" : "")">
+                            <i class="fas fa-user-shield"></i> User Management
+                        </a>
+                    </div>
             }
+
+            <div class="nav-section">
+                <div class="nav-section-label">System</div>
+                <a href="/Settings/Index" class="nav-item @(ctx == "settings" ? "active" : "")">
+                    <i class="fas fa-cog"></i> Business Settings
+                </a>
+            </div>
+
         </nav>
     </aside>
 
@@ -995,11 +1009,11 @@
         <div class="page-body">
             @if (TempData["Success"] != null)
             {
-                <div class="alert alert-success"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>
+                    <div class="alert alert-success"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>
             }
             @if (TempData["Error"] != null)
             {
-                <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</div>
+                    <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</div>
             }
             @RenderBody()
         </div>

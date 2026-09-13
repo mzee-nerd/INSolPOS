@@ -488,7 +488,7 @@ namespace INSolPOS.Controllers
         public async Task<IActionResult> Transfer()
         {
             ViewBag.Warehouses = await _db.Warehouses.Where(w => w.IsActive).ToListAsync();
-            ViewBag.Products = await _db.Products.Where(p => p.IsActive).ToListAsync();
+            ViewBag.Products = await _db.Products.Include(p => p.Unit).Where(p => p.IsActive).ToListAsync();
             return View();
         }
         [HttpPost]
@@ -559,7 +559,8 @@ namespace INSolPOS.Controllers
         public async Task<IActionResult> LoadVehicle(int id)
         {
             ViewBag.Vehicle = await _db.Vehicles.FindAsync(id);
-            ViewBag.Products = await _db.Products.Where(p => p.IsActive && p.CurrentStock > 0).ToListAsync();
+            ViewBag.Products = await _db.Products.Include(p => p.Unit)
+                .Where(p => p.IsActive && p.CurrentStock > 0).ToListAsync();
             return View();
         }
         [HttpPost]
@@ -568,13 +569,15 @@ namespace INSolPOS.Controllers
             var load = new VehicleLoad { VehicleId = vehicleId, Status = LoadStatus.Loaded };
             for (int i = 0; i < productIds.Count; i++)
             {
+                if (productIds[i] <= 0 || quantities.Count <= i || quantities[i] <= 0) continue;
                 load.Items.Add(new VehicleLoadItem { ProductId = productIds[i], LoadedQty = quantities[i] });
                 var p = await _db.Products.FindAsync(productIds[i]);
                 if (p != null) p.CurrentStock = Math.Max(0, p.CurrentStock - quantities[i]);
             }
+            if (!load.Items.Any()) { TempData["Error"] = "Select at least one product with quantity."; return RedirectToAction("LoadVehicle", new { id = vehicleId }); }
             _db.VehicleLoads.Add(load);
             await _db.SaveChangesAsync();
-            TempData["Success"] = "Vehicle loaded.";
+            TempData["Success"] = "Vehicle loaded. Stock updated.";
             return RedirectToAction("Index");
         }
         public async Task<IActionResult> UnloadVehicle(int loadId) =>
@@ -708,6 +711,12 @@ namespace INSolPOS.Controllers
                 .Include(p => p.Items).ThenInclude(i => i.Product).ThenInclude(p => p!.Unit)
                 .FirstOrDefaultAsync(p => p.Id == id));
 
+        public async Task<IActionResult> Returns() =>
+            View(await _db.PurchaseReturns
+                .Include(r => r.Purchase).ThenInclude(p => p!.Vendor)
+                .Include(r => r.Items).ThenInclude(i => i.Product)
+                .OrderByDescending(r => r.ReturnDate).ToListAsync());
+
         public async Task<IActionResult> Return(int purchaseId)
         {
             ViewBag.Purchase = await _db.Purchases.Include(p => p.Vendor)
@@ -788,10 +797,13 @@ namespace INSolPOS.Controllers
             return RedirectToAction("Receipt", new { id = result.Id });
         }
 
-        public async Task<IActionResult> Receipt(int id) =>
-            View(await _db.Sales.Include(s => s.Customer).Include(s => s.Staff)
+        public async Task<IActionResult> Receipt(int id)
+        {
+            ViewBag.Settings = await _db.CompanySettings.FirstOrDefaultAsync();
+            return View(await _db.Sales.Include(s => s.Customer).Include(s => s.Staff)
                 .Include(s => s.Items).ThenInclude(i => i.Product).ThenInclude(p => p!.Unit)
                 .FirstOrDefaultAsync(s => s.Id == id));
+        }
 
         public async Task<IActionResult> Details(int id) =>
             View(await _db.Sales.Include(s => s.Customer).Include(s => s.Staff)
@@ -954,18 +966,59 @@ namespace INSolPOS.Controllers
     {
         private readonly AppDbContext _db;
         public ExpensesController(AppDbContext db) => _db = db;
-        public async Task<IActionResult> Index(DateTime? from, DateTime? to, string? category)
+
+        public async Task<IActionResult> Index(DateTime? from, DateTime? to, int? categoryId)
         {
             var f = from ?? DateTime.Today.AddMonths(-1);
             var t = to ?? DateTime.Today;
             var all = await _db.Expenses.OrderByDescending(e => e.Date).ToListAsync();
+            var cats = await _db.ExpenseCategories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
             var list = all.Where(e => e.Date.Date >= f && e.Date.Date <= t);
-            if (!string.IsNullOrEmpty(category)) list = list.Where(e => e.Category == category);
+            if (categoryId.HasValue)
+            {
+                var catName = cats.FirstOrDefault(c => c.Id == categoryId)?.Name;
+                if (catName != null) list = list.Where(e => e.Category == catName);
+            }
             var result = list.ToList();
-            ViewBag.From = f; ViewBag.To = t;
-            ViewBag.Categories = all.Select(e => e.Category).Where(c => c != null).Distinct().ToList();
+            ViewBag.From = f;
+            ViewBag.To = t;
+            ViewBag.CategoryId = categoryId;
+            ViewBag.ExpenseCategories = cats;
             ViewBag.Total = result.Sum(e => e.Amount);
             return View(result);
+        }
+
+        // ── Expense Category CRUD ──
+        public async Task<IActionResult> Categories() =>
+            View(await _db.ExpenseCategories.OrderBy(c => c.Name).ToListAsync());
+
+        [HttpPost]
+        public async Task<IActionResult> CreateCategory(ExpenseCategory cat)
+        {
+            if (await _db.ExpenseCategories.AnyAsync(c => c.Name == cat.Name))
+            { TempData["Error"] = $"Category '{cat.Name}' already exists."; return RedirectToAction("Categories"); }
+            _db.ExpenseCategories.Add(cat);
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Category '{cat.Name}' added.";
+            return RedirectToAction("Categories");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditCategory(int id, string name, string? description)
+        {
+            var cat = await _db.ExpenseCategories.FindAsync(id);
+            if (cat != null) { cat.Name = name; cat.Description = description; await _db.SaveChangesAsync(); TempData["Success"] = "Category updated."; }
+            return RedirectToAction("Categories");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var inUse = await _db.Expenses.AnyAsync(e => e.Category == _db.ExpenseCategories.Where(c => c.Id == id).Select(c => c.Name).FirstOrDefault());
+            if (inUse) { TempData["Error"] = "Cannot delete: category is used in expense records."; return RedirectToAction("Categories"); }
+            var cat = await _db.ExpenseCategories.FindAsync(id);
+            if (cat != null) { cat.IsActive = false; await _db.SaveChangesAsync(); TempData["Success"] = "Category deleted."; }
+            return RedirectToAction("Categories");
         }
         [HttpPost]
         public async Task<IActionResult> Add(Expense expense)
@@ -977,12 +1030,70 @@ namespace INSolPOS.Controllers
             TempData["Success"] = $"Expense of Rs.{expense.Amount:N2} recorded.";
             return RedirectToAction("Index");
         }
+
+        public async Task<IActionResult> Add()
+        {
+            ViewBag.ExpenseCategories = await _db.ExpenseCategories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
+            return View();
+        }
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
             var e = await _db.Expenses.FindAsync(id);
             if (e != null) { _db.Expenses.Remove(e); await _db.SaveChangesAsync(); }
             TempData["Success"] = "Expense deleted.";
+            return RedirectToAction("Index");
+        }
+    }
+}
+
+namespace INSolPOS.Controllers
+{
+    // ─────────────── SETTINGS ───────────────
+    public class SettingsController : BaseController
+    {
+        private readonly AppDbContext _db;
+        private readonly IWebHostEnvironment _env;
+        public SettingsController(AppDbContext db, IWebHostEnvironment env) { _db = db; _env = env; }
+
+        public async Task<IActionResult> Index()
+        {
+            var settings = await _db.CompanySettings.FirstOrDefaultAsync()
+                           ?? new CompanySettings();
+            return View(settings);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Save(CompanySettings model, IFormFile? logoFile)
+        {
+            var existing = await _db.CompanySettings.FirstOrDefaultAsync();
+            if (logoFile != null && logoFile.Length > 0)
+            {
+                var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploadsDir);
+                var fileName = "logo" + Path.GetExtension(logoFile.FileName);
+                var filePath = Path.Combine(uploadsDir, fileName);
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await logoFile.CopyToAsync(stream);
+                model.LogoPath = "/uploads/" + fileName;
+            }
+            else { model.LogoPath = existing?.LogoPath; }
+
+            if (existing == null) { _db.CompanySettings.Add(model); }
+            else
+            {
+                existing.BusinessName = model.BusinessName;
+                existing.Tagline = model.Tagline;
+                existing.Address = model.Address;
+                existing.Phone = model.Phone;
+                existing.Email = model.Email;
+                existing.Website = model.Website;
+                existing.LogoPath = model.LogoPath;
+                existing.Currency = model.Currency;
+                existing.InvoiceFooter = model.InvoiceFooter;
+            }
+            await _db.SaveChangesAsync();
+            TempData["Success"] = "Settings saved.";
             return RedirectToAction("Index");
         }
     }

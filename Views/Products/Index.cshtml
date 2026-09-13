@@ -51,7 +51,7 @@
                         </td>
                         <td><span class="badge badge-info">@(p.Category?.Name ?? "—")</span></td>
                         <td class="text-center">
-                            <span class="badge badge-accent">@p.CartonQty @(p.Unit?.Abbreviation ?? "pcs")/ctn</span>
+                            <span class="badge badge-accent">@p.CartonQty @(p.Unit?.Abbreviation ?? "pcs")/carton</span>
                         </td>
                         <td class="text-right">
                             <div class="font-mono text-sm">Rs. @p.PurchasePrice.ToString("N2")</div>
@@ -64,7 +64,7 @@
                         <td class="text-right font-mono" style="color:var(--c-purple);">@p.CommissionPercentage.ToString("N1")%</td>
                         <td class="text-right">
                             <div class="font-mono fw-bold @(p.CurrentStock == 0 ? "text-red" : isLow ? "text-amber" : "text-green")">
-                                @cartonStock ctn + @looseStock.ToString("N1") pcs
+                                @cartonStock @(p.Unit?.Abbreviation ?? "ctn") + @looseStock.ToString("N1") @(p.Unit?.Abbreviation ?? "pcs")
                             </div>
                             <div class="text-xs text-muted">(@p.CurrentStock.ToString("N2") total)</div>
                         </td>

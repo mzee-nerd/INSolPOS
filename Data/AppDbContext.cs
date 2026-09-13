@@ -10,8 +10,6 @@ namespace INSolPOS.Data
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Vendor> Vendors { get; set; }
-        public DbSet<VendorLedger> VendorLedgers { get; set; }
-        public DbSet<VendorPayment> VendorPayments { get; set; }
         public DbSet<Staff> Staff { get; set; }
         public DbSet<StaffSalary> StaffSalaries { get; set; }
         public DbSet<AdvanceSalary> AdvanceSalaries { get; set; }
@@ -39,65 +37,71 @@ namespace INSolPOS.Data
         public DbSet<PaymentReceipt> PaymentReceipts { get; set; }
         public DbSet<InitialCapital> InitialCapitals { get; set; }
         public DbSet<Expense> Expenses { get; set; }
+        public DbSet<ExpenseCategory> ExpenseCategories { get; set; }
+        public DbSet<VendorLedger> VendorLedgers { get; set; }
+        public DbSet<VendorPayment> VendorPayments { get; set; }
+        public DbSet<CompanySettings> CompanySettings { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder mb)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(mb);
+            base.OnModelCreating(modelBuilder);
 
             // Decimal precision
-            mb.Entity<Product>().Property(p => p.PurchasePrice).HasPrecision(18, 4);
-            mb.Entity<Product>().Property(p => p.SalePrice).HasPrecision(18, 4);
-            mb.Entity<Product>().Property(p => p.WholesalePrice).HasPrecision(18, 4);
-            mb.Entity<Product>().Property(p => p.CommissionPercentage).HasPrecision(5, 2);
-            mb.Entity<Product>().Property(p => p.CurrentStock).HasPrecision(18, 4);
-            mb.Entity<Sale>().Property(s => s.TotalAmount).HasPrecision(18, 2);
-            mb.Entity<Sale>().Property(s => s.PaidAmount).HasPrecision(18, 2);
-            mb.Entity<Purchase>().Property(p => p.TotalAmount).HasPrecision(18, 2);
-            mb.Entity<CustomerLedger>().Property(l => l.Balance).HasPrecision(18, 2);
-            mb.Entity<CustomerLedger>().Property(l => l.Debit).HasPrecision(18, 2);
-            mb.Entity<CustomerLedger>().Property(l => l.Credit).HasPrecision(18, 2);
-            mb.Entity<VendorLedger>().Property(l => l.Balance).HasPrecision(18, 2);
-            mb.Entity<VendorLedger>().Property(l => l.Debit).HasPrecision(18, 2);
-            mb.Entity<VendorLedger>().Property(l => l.Credit).HasPrecision(18, 2);
+            modelBuilder.Entity<Product>().Property(p => p.PurchasePrice).HasPrecision(18, 4);
+            modelBuilder.Entity<Product>().Property(p => p.SalePrice).HasPrecision(18, 4);
+            modelBuilder.Entity<Product>().Property(p => p.CommissionPercentage).HasPrecision(5, 2);
+            modelBuilder.Entity<Product>().Property(p => p.CurrentStock).HasPrecision(18, 4);
 
-            // Ignore computed properties (not mapped to DB columns)
-            mb.Entity<Purchase>().Ignore(p => p.DueAmount);
-            mb.Entity<Sale>().Ignore(s => s.DueAmount);
-            mb.Entity<SaleItem>().Ignore(i => i.TotalQty).Ignore(i => i.TotalAmount);
-            mb.Entity<PurchaseItem>().Ignore(i => i.TotalQty).Ignore(i => i.TotalAmount);
-            mb.Entity<PurchaseReturnItem>().Ignore(i => i.Amount);
-            mb.Entity<SaleReturnItem>().Ignore(i => i.Amount);
-            mb.Entity<VehicleLoadItem>().Ignore(i => i.SoldQty);
+            modelBuilder.Entity<Sale>().Property(s => s.TotalAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Sale>().Property(s => s.PaidAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<Purchase>().Property(p => p.TotalAmount).HasPrecision(18, 2);
 
-            // Seed super admin
-            mb.Entity<ApplicationUser>().HasData(new ApplicationUser
+            modelBuilder.Entity<CustomerLedger>().Property(l => l.Balance).HasPrecision(18, 2);
+            modelBuilder.Entity<CustomerLedger>().Property(l => l.Debit).HasPrecision(18, 2);
+            modelBuilder.Entity<CustomerLedger>().Property(l => l.Credit).HasPrecision(18, 2);
+
+            // Ignore computed properties
+            modelBuilder.Entity<Purchase>().Ignore(p => p.DueAmount);
+            modelBuilder.Entity<Sale>().Ignore(s => s.DueAmount);
+            modelBuilder.Entity<SaleItem>().Ignore(i => i.TotalQty).Ignore(i => i.TotalAmount);
+            modelBuilder.Entity<PurchaseItem>().Ignore(i => i.TotalQty).Ignore(i => i.TotalAmount);
+            modelBuilder.Entity<PurchaseReturnItem>().Ignore(i => i.Amount);
+            modelBuilder.Entity<SaleReturnItem>().Ignore(i => i.Amount);
+            modelBuilder.Entity<VehicleLoadItem>().Ignore(i => i.SoldQty);
+
+            // Seed default super admin
+            modelBuilder.Entity<ApplicationUser>().HasData(new ApplicationUser
             {
-                Id = 1, FullName = "Super Admin", Username = "superadmin",
-                PasswordHash = Convert.ToBase64String(
-                    System.Text.Encoding.UTF8.GetBytes("Admin@123_INSolSalt2024")),
-                Role = UserRole.SuperAdmin, IsActive = true, CreatedAt = new DateTime(2024, 1, 1)
+                Id = 1,
+                FullName = "Super Admin",
+                Username = "superadmin",
+                PasswordHash = BCryptHash("Admin@123"),
+                Role = UserRole.SuperAdmin,
+                IsActive = true,
+                CreatedAt = new DateTime(2024, 1, 1)
             });
 
-            mb.Entity<Unit>().HasData(
-                new Unit { Id = 1, Name = "Piece",    Abbreviation = "Pcs" },
-                new Unit { Id = 2, Name = "Carton",   Abbreviation = "Ctn" },
-                new Unit { Id = 3, Name = "Kilogram", Abbreviation = "Kg"  },
-                new Unit { Id = 4, Name = "Liter",    Abbreviation = "Ltr" },
-                new Unit { Id = 5, Name = "Dozen",    Abbreviation = "Dz"  },
-                new Unit { Id = 6, Name = "Pack",     Abbreviation = "Pk"  }
+            // Seed default units
+            modelBuilder.Entity<Unit>().HasData(
+                new Unit { Id = 1, Name = "Piece", Abbreviation = "Pcs" },
+                new Unit { Id = 2, Name = "Carton", Abbreviation = "Ctn" },
+                new Unit { Id = 3, Name = "Kilogram", Abbreviation = "Kg" },
+                new Unit { Id = 4, Name = "Liter", Abbreviation = "Ltr" },
+                new Unit { Id = 5, Name = "Dozen", Abbreviation = "Dz" }
             );
 
-            mb.Entity<Category>().HasData(
-                new Category { Id = 1, Name = "General"          },
+            // Seed default categories
+            modelBuilder.Entity<Category>().HasData(
+                new Category { Id = 1, Name = "General" },
                 new Category { Id = 2, Name = "Food & Beverages" },
-                new Category { Id = 3, Name = "Electronics"      },
-                new Category { Id = 4, Name = "Dairy Products"   },
-                new Category { Id = 5, Name = "Snacks"           }
+                new Category { Id = 3, Name = "Electronics" }
             );
+        }
 
-            mb.Entity<Warehouse>().HasData(
-                new Warehouse { Id = 1, Name = "Main Warehouse", Location = "Head Office", IsActive = true }
-            );
+        private static string BCryptHash(string password)
+        {
+            // Simple hash placeholder - in production use BCrypt.Net
+            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(password + "_hashed"));
         }
     }
 }

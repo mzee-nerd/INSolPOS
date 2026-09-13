@@ -269,7 +269,7 @@ namespace INSolPOS.Services
         {
             var q = _db.CustomerLedgers.Where(l => l.CustomerId == customerId);
             if (from.HasValue) q = q.Where(l => l.Date >= from.Value);
-            if (to.HasValue)   q = q.Where(l => l.Date <= to.Value.AddDays(1));
+            if (to.HasValue) q = q.Where(l => l.Date <= to.Value.AddDays(1));
             return await q.OrderBy(l => l.Date).ThenBy(l => l.Id).ToListAsync();
         }
 
@@ -499,13 +499,16 @@ namespace INSolPOS.Services
         public decimal GrossProfit => NetSales - NetPurchases;
         public decimal NetProfit => GrossProfit - TotalExpenses;
 
-        // The balancing figure: if Dr != Cr it goes here
-        public decimal TotalDebit => TotalPurchases - PurchaseReturns
+        // The Trial Balance uses the Income Statement approach:
+        // Debit side:  Cash + Receivables + Inventory (closing stock) + Expenses
+        // Credit side: Capital + Net Sales + Payables
+        // Purchases are captured inside CashInHand (cash paid out) — not listed separately
+        public decimal TotalDebit => CashInHand + BankBalance + Receivables
                                     + SalaryExpenses + CommExpenses + OtherExpenses
-                                    + Receivables + Inventory + CashInHand + BankBalance
-                                    + (NetProfit < 0 ? Math.Abs(NetProfit) : 0);   // net loss on Dr side
-        public decimal TotalCredit => Capital + TotalSales - SaleReturns + Payables
-                                    + (NetProfit > 0 ? NetProfit : 0);              // net profit on Cr side
+                                    + SaleReturns                                   // sale returns reduce revenue (Dr side)
+                                    + (NetProfit < 0 ? Math.Abs(NetProfit) : 0);
+        public decimal TotalCredit => Capital + TotalSales + Payables
+                                    + (NetProfit > 0 ? NetProfit : 0);
         public decimal Discrepancy => TotalDebit - TotalCredit;
     }
 
@@ -527,14 +530,14 @@ namespace INSolPOS.Services
             var balance = await GetBalanceAsync(vendorId);
             _db.VendorLedgers.Add(new VendorLedger
             {
-                VendorId      = vendorId,
-                Description   = desc,
-                Debit         = debit,
-                Credit        = credit,
-                Balance       = balance + credit - debit,  // credit = we owe more, debit = we paid
+                VendorId = vendorId,
+                Description = desc,
+                Debit = debit,
+                Credit = credit,
+                Balance = balance + credit - debit,  // credit = we owe more, debit = we paid
                 ReferenceType = refType,
-                ReferenceId   = refId,
-                Date          = DateTime.Now
+                ReferenceId = refId,
+                Date = DateTime.Now
             });
             await _db.SaveChangesAsync();
         }
@@ -543,7 +546,7 @@ namespace INSolPOS.Services
         {
             var q = _db.VendorLedgers.Where(l => l.VendorId == vendorId);
             if (from.HasValue) q = q.Where(l => l.Date >= from.Value);
-            if (to.HasValue)   q = q.Where(l => l.Date <= to.Value.AddDays(1));
+            if (to.HasValue) q = q.Where(l => l.Date <= to.Value.AddDays(1));
             return await q.OrderBy(l => l.Date).ThenBy(l => l.Id).ToListAsync();
         }
 

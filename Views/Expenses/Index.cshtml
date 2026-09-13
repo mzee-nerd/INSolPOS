@@ -4,224 +4,196 @@
     ViewBag.Title = "Expenses";
     ViewBag.NavContext = "expenses";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var categories = ViewBag.Categories as List<string?> ?? new();
-    decimal total  = ViewBag.Total ?? 0m;
+    var expCats = ViewBag.ExpenseCategories as List<ExpenseCategory> ?? new();
+    decimal total = ViewBag.Total ?? 0m;
 }
 
-<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
-
-    <!-- LEFT: Expense List -->
-    <div>
-        <!-- Filter -->
-        <div class="card mb-4">
-            <div class="card-body" style="padding:12px 16px;">
-                <form method="get" class="flex gap-2 items-center" style="flex-wrap:wrap;">
-                    <input type="date" name="from" value="@ViewBag.From?.ToString("yyyy-MM-dd")" class="form-control" style="width:148px;" />
-                    <span class="text-muted">—</span>
-                    <input type="date" name="to"   value="@ViewBag.To?.ToString("yyyy-MM-dd")"   class="form-control" style="width:148px;" />
-                    <select name="category" class="form-control" style="width:160px;">
-                        <option value="">All Categories</option>
-                        @foreach (var cat in categories.Where(c => c != null))
-                        {
-                            <option value="@cat">@cat</option>
-                        }
-                    </select>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <span class="stat-label">Total Expenses</span>
-                    <div class="stat-icon" style="background:rgba(239,68,68,0.12);color:var(--c-red);"><i class="fas fa-minus-circle"></i></div>
-                </div>
-                <div class="stat-value font-mono text-red" style="font-size:20px;">Rs. @total.ToString("N0")</div>
-                <div class="stat-change">@Model.Count entries in period</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <span class="stat-label">Largest Expense</span>
-                    <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:var(--c-amber);"><i class="fas fa-arrow-up"></i></div>
-                </div>
-                <div class="stat-value font-mono text-amber" style="font-size:18px;">
-                    Rs. @(Model.Any() ? Model.Max(e => e.Amount).ToString("N0") : "0")
-                </div>
-                <div class="stat-change">@(Model.OrderByDescending(e => e.Amount).FirstOrDefault()?.Title ?? "—")</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <span class="stat-label">This Month</span>
-                    <div class="stat-icon" style="background:rgba(79,110,247,0.12);color:var(--c-accent);"><i class="fas fa-calendar"></i></div>
-                </div>
-                <div class="stat-value font-mono text-accent" style="font-size:18px;">
-                    Rs. @Model.Where(e => e.Date.Month == DateTime.Now.Month && e.Date.Year == DateTime.Now.Year).Sum(e => e.Amount).ToString("N0")
-                </div>
-            </div>
-        </div>
-
-        <!-- Expense Table -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title"><i class="fas fa-file-invoice-dollar text-red" style="margin-right:8px;"></i>Expense Records</span>
-                <input type="text" id="searchBox" placeholder="Search..." class="form-control" style="width:180px;" oninput="filterTable()" />
-            </div>
-            <div class="table-wrap">
-                <table id="expTable">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Date</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th class="text-right">Amount</th>
-                            <th>Notes</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{ int row = 1; }
-                        @foreach (var e in Model)
-                        {
-                            <tr>
-                                <td class="text-muted text-xs">@(row++)</td>
-                                <td class="font-mono text-muted text-sm">@e.Date.ToString("dd MMM yy")</td>
-                                <td class="fw-semibold">@e.Title</td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(e.Category))
-                                    { <span class="badge badge-info">@e.Category</span> }
-                                    else { <span class="text-muted">—</span> }
-                                </td>
-                                <td class="text-right font-mono fw-bold text-red">Rs. @e.Amount.ToString("N2")</td>
-                                <td class="text-muted text-sm">@(e.Notes ?? "—")</td>
-                                <td>
-                                    <form method="post" action="/Expenses/Delete/@e.Id" style="display:inline;"
-                                          onsubmit="return confirm('Delete this expense entry?')">
-                                        <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        }
-                        @if (!Model.Any())
-                        {
-                            <tr>
-                                <td colspan="7" style="text-align:center;padding:40px;color:var(--c-text3);">
-                                    <i class="fas fa-receipt" style="font-size:32px;opacity:0.3;display:block;margin-bottom:10px;"></i>
-                                    No expenses found for this period.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    @if (Model.Any())
-                    {
-                        <tfoot>
-                            <tr style="background:var(--c-surface2);font-weight:700;">
-                                <td colspan="4">TOTAL</td>
-                                <td class="text-right font-mono text-red">Rs. @total.ToString("N2")</td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
-                    }
-                </table>
-            </div>
-        </div>
-
-        <!-- Category Breakdown -->
-        @if (Model.Any())
-        {
-            <div class="card mt-4">
-                <div class="card-header"><span class="card-title">Breakdown by Category</span></div>
-                <div class="card-body">
-                    @foreach (var grp in Model.GroupBy(e => e.Category ?? "Uncategorized").OrderByDescending(g => g.Sum(e => e.Amount)))
-                    {
-                        var pct = total > 0 ? (grp.Sum(e => e.Amount) / total) * 100 : 0;
-                        <div style="margin-bottom:12px;">
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="fw-semibold">@grp.Key</span>
-                                <span class="font-mono text-red">Rs. @grp.Sum(e => e.Amount).ToString("N0") (@pct.ToString("F1")%)</span>
-                            </div>
-                            <div style="height:6px;background:var(--c-surface2);border-radius:3px;overflow:hidden;">
-                                <div style="height:100%;width:@pct.ToString("F1")%;background:var(--c-red);border-radius:3px;"></div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
+<!-- Top bar -->
+<div class="flex justify-between items-center mb-4">
+    <div class="flex gap-2">
+        <a href="/Expenses/Categories" class="btn btn-secondary btn-sm"><i class="fas fa-tags"></i> Manage Categories</a>
     </div>
+    <a href="/Expenses/Add" class="btn btn-primary"><i class="fas fa-plus"></i> Add Expense</a>
+</div>
 
-    <!-- RIGHT: Add Expense Form -->
-    <div style="position:sticky;top:80px;">
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title"><i class="fas fa-plus-circle text-red" style="margin-right:8px;"></i>Add Expense</span>
+<!-- Filter Bar -->
+<div class="card mb-4">
+    <div class="card-body" style="padding:12px 16px;">
+        <form method="get" class="flex gap-2 items-center" style="flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label class="form-label" style="margin:0;white-space:nowrap;font-size:12px;">Date Range:</label>
+                <input type="date" name="from" value="@ViewBag.From?.ToString("yyyy-MM-dd")" class="form-control" style="width:148px;" />
+                <span class="text-muted">—</span>
+                <input type="date" name="to" value="@ViewBag.To?.ToString("yyyy-MM-dd")" class="form-control" style="width:148px;" />
             </div>
-            <div class="card-body">
-                <form method="post" action="/Expenses/Add">
-                    <div class="form-group mb-3">
-                        <label class="form-label">TITLE *</label>
-                        <input type="text" name="Title" class="form-control" required placeholder="e.g. Electricity Bill" />
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">CATEGORY</label>
-                        <input type="text" name="Category" class="form-control" placeholder="e.g. Utilities" list="catList" />
-                        <datalist id="catList">
-                            @foreach (var cat in categories.Where(c => c != null))
-                            { <option value="@cat"></option> }
-                            <option value="Utilities"></option>
-                            <option value="Rent"></option>
-                            <option value="Transport"></option>
-                            <option value="Maintenance"></option>
-                            <option value="Salary"></option>
-                            <option value="Office Supplies"></option>
-                            <option value="Miscellaneous"></option>
-                        </datalist>
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">AMOUNT (Rs.) *</label>
-                        <input type="number" name="Amount" class="form-control font-mono" required min="0.01" step="0.01" placeholder="0.00" />
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">DATE</label>
-                        <input type="datetime-local" name="Date" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
-                    </div>
-                    <div class="form-group mb-4">
-                        <label class="form-label">NOTES</label>
-                        <textarea name="Notes" class="form-control" rows="2" placeholder="Optional details..."></textarea>
-                    </div>
-
-                    <!-- Quick Category Buttons -->
-                    <div style="margin-bottom:14px;border-top:1px solid var(--c-border);padding-top:12px;">
-                        <div class="text-xs text-muted mb-2" style="font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Quick Categories</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                            @foreach (var cat in new[] { "Utilities", "Rent", "Transport", "Maintenance", "Office Supplies", "Miscellaneous" })
-                            {
-                                <button type="button" onclick="document.querySelector('[name=Category]').value='@cat'"
-                                        class="btn btn-secondary btn-xs">@cat</button>
-                            }
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-danger w-full" style="justify-content:center;font-size:14px;padding:12px;">
-                        <i class="fas fa-save"></i> Record Expense
-                    </button>
-                </form>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label class="form-label" style="margin:0;white-space:nowrap;font-size:12px;">Category:</label>
+                <select name="categoryId" class="form-control" style="width:180px;">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in expCats)
+                    {
+                        if ((int?)(ViewBag.CategoryId) == cat.Id)
+                        {
+                            <option value="@cat.Id" selected>@cat.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    }
+                </select>
             </div>
-        </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+            <a href="/Expenses/Index" class="btn btn-secondary">Clear</a>
+        </form>
     </div>
 </div>
 
+<!-- Summary Cards -->
+<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Total (Filtered)</span>
+            <div class="stat-icon" style="background:rgba(239,68,68,0.12);color:var(--c-red);"><i class="fas fa-minus-circle"></i></div>
+        </div>
+        <div class="stat-value font-mono text-red" style="font-size:20px;">Rs. @total.ToString("N0")</div>
+        <div class="stat-change">@Model.Count entries</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Largest Entry</span>
+            <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:var(--c-amber);"><i class="fas fa-arrow-up"></i></div>
+        </div>
+        <div class="stat-value font-mono text-amber" style="font-size:18px;">
+            Rs. @(Model.Any() ? Model.Max(e => e.Amount).ToString("N0") : "0")
+        </div>
+        <div class="stat-change">@(Model.OrderByDescending(e => e.Amount).FirstOrDefault()?.Title ?? "—")</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">This Month</span>
+            <div class="stat-icon" style="background:rgba(79,110,247,0.12);color:var(--c-accent);"><i class="fas fa-calendar"></i></div>
+        </div>
+        <div class="stat-value font-mono text-accent" style="font-size:18px;">
+            Rs. @Model.Where(e => e.Date.Month == DateTime.Now.Month && e.Date.Year == DateTime.Now.Year).Sum(e => e.Amount).ToString("N0")
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-label">Categories</span>
+            <div class="stat-icon" style="background:rgba(168,85,247,0.12);color:var(--c-purple);"><i class="fas fa-tags"></i></div>
+        </div>
+        <div class="stat-value font-mono" style="color:var(--c-purple);font-size:20px;">
+            @Model.Select(e => e.Category).Where(c => c != null).Distinct().Count()
+        </div>
+        <div class="stat-change">distinct categories used</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+
+    <!-- Expense Table -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-file-invoice-dollar text-red" style="margin-right:8px;"></i>Expense Records</span>
+            <input type="text" id="searchBox" placeholder="Search..." class="form-control" style="width:180px;" oninput="filterTable()" />
+        </div>
+        <div class="table-wrap">
+            <table id="expTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th class="text-right">Amount</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model)
+                    {
+                        <tr>
+                            <td class="font-mono text-muted text-sm">@e.Date.ToString("dd MMM yy")</td>
+                            <td class="fw-semibold">@e.Title</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(e.Category))
+                                {
+                                    <span class="badge badge-info">@e.Category</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td class="text-right font-mono fw-bold text-red">Rs. @e.Amount.ToString("N2")</td>
+                            <td class="text-muted text-sm">@(e.Notes ?? "—")</td>
+                            <td>
+                                <form method="post" action="/Expenses/Delete/@e.Id" style="display:inline;"
+                                      onsubmit="return confirm('Delete this expense?')">
+                                    <button type="submit" class="btn btn-danger btn-xs btn-icon" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:40px;color:var(--c-text3);">
+                                <i class="fas fa-receipt" style="font-size:32px;opacity:0.3;display:block;margin-bottom:10px;"></i>
+                                No expenses found for this period.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                @if (Model.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--c-surface2);font-weight:700;">
+                            <td colspan="3">TOTAL</td>
+                            <td class="text-right font-mono text-red">Rs. @total.ToString("N2")</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    @if (Model.Any())
+    {
+        <div class="card" style="position:sticky;top:80px;">
+            <div class="card-header"><span class="card-title">By Category</span></div>
+            <div class="card-body" style="padding:12px 16px;">
+                @foreach (var grp in Model.GroupBy(e => e.Category ?? "Uncategorized").OrderByDescending(g => g.Sum(e => e.Amount)))
+                {
+                    var pct = total > 0 ? (grp.Sum(e => e.Amount) / total) * 100 : 0;
+                    <div style="margin-bottom:12px;">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="fw-semibold">@grp.Key</span>
+                            <span class="font-mono text-red">Rs. @grp.Sum(e => e.Amount).ToString("N0")</span>
+                        </div>
+                        <div style="height:6px;background:var(--c-surface2);border-radius:3px;overflow:hidden;">
+                            <div style="height:100%;width:@pct.ToString("F1")%;background:var(--c-red);border-radius:3px;"></div>
+                        </div>
+                        <div class="text-xs text-muted mt-1">@pct.ToString("F1")% · @grp.Count() entries</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
 @section Scripts {
-<script>
-function filterTable() {
-    const q = document.getElementById('searchBox').value.toLowerCase();
-    document.querySelectorAll('#expTable tbody tr').forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-}
-</script>
+    <script>
+        function filterTable() {
+            const q = document.getElementById('searchBox').value.toLowerCase();
+            document.querySelectorAll('#expTable tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+    </script>
 }

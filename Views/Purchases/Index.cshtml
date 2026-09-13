@@ -44,7 +44,7 @@
                         <td>
                             <div class="flex gap-1">
                                 <a href="/Purchases/Details/@p.Id" class="btn btn-secondary btn-xs"><i class="fas fa-eye"></i></a>
-                                <a href="/Purchases/Return/@p.Id" class="btn btn-warning btn-xs"><i class="fas fa-undo"></i></a>
+                                <a href="/Purchases/Return?purchaseId=@p.Id" class="btn btn-warning btn-xs"><i class="fas fa-undo"></i></a>
                             </div>
                         </td>
                     </tr>
@@ -55,12 +55,12 @@
 </div>
 
 @section Scripts {
-<script>
-    function filterTable() {
-        const q = document.getElementById('searchBox').value.toLowerCase();
-        document.querySelectorAll('#purchTable tbody tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-        });
-    }
-</script>
+    <script>
+        function filterTable() {
+            const q = document.getElementById('searchBox').value.toLowerCase();
+            document.querySelectorAll('#purchTable tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+    </script>
 }

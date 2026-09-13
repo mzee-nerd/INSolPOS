@@ -26,6 +26,7 @@ builder.Services.AddScoped<ILedgerService, LedgerService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IVendorLedgerService, VendorLedgerService>();
 
+
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

@@ -423,7 +423,28 @@ namespace INSolPOS.Models
         public int ReceivedByUserId { get; set; }
     }
 
-    // ─────────────── VENDOR LEDGER ───────────────
+    public class ExpenseCategory
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class CompanySettings
+    {
+        public int Id { get; set; }
+        public string BusinessName { get; set; } = "My Business";
+        public string? Tagline { get; set; }
+        public string? Address { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? Website { get; set; }
+        public string? LogoPath { get; set; }  // relative path e.g. /uploads/logo.png
+        public string? Currency { get; set; } = "Rs.";
+        public string? InvoiceFooter { get; set; }
+    }
+
     public class VendorLedger
     {
         public int Id { get; set; }

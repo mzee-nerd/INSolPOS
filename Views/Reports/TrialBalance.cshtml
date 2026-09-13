@@ -83,18 +83,9 @@
                     <tr>
                         <td>
                             <div class="fw-semibold">Cash in Hand</div>
-                            <div class="text-xs text-muted">Capital + cash received − cash paid − expenses</div>
+                            <div class="text-xs text-muted">Capital + sales collected − purchases paid − expenses</div>
                         </td>
                         <td class="text-right font-mono fw-semibold">@Model.CashInHand.ToString("N2")</td>
-                        <td class="text-right font-mono text-muted">—</td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">Closing Stock (Inventory)</div>
-                            <div class="text-xs text-muted">Current stock × purchase price</div>
-                        </td>
-                        <td class="text-right font-mono fw-semibold">@Model.Inventory.ToString("N2")</td>
                         <td class="text-right font-mono text-muted">—</td>
                     </tr>
 
@@ -107,22 +98,14 @@
                         <td class="text-right font-mono text-muted">—</td>
                     </tr>
 
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">Purchases</div>
-                            <div class="text-xs text-muted">Total goods purchased</div>
-                        </td>
-                        <td class="text-right font-mono">@Model.TotalPurchases.ToString("N2")</td>
-                        <td class="text-right font-mono text-muted">—</td>
-                    </tr>
-
-                    @if (Model.PurchaseReturns > 0)
+                    @if (Model.SaleReturns > 0)
                     {
                         <tr>
                             <td>
-                                <div class="fw-semibold text-muted" style="padding-left:16px;">(-) Purchase Returns</div>
+                                <div class="fw-semibold">Sale Returns</div>
+                                <div class="text-xs text-muted">Goods returned by customers (reduces revenue)</div>
                             </td>
-                            <td class="text-right font-mono text-red">(@Model.PurchaseReturns.ToString("N2"))</td>
+                            <td class="text-right font-mono text-red">@Model.SaleReturns.ToString("N2")</td>
                             <td class="text-right font-mono text-muted">—</td>
                         </tr>
                     }
@@ -174,17 +157,6 @@
                         <td class="text-right font-mono text-muted">—</td>
                         <td class="text-right font-mono">@Model.TotalSales.ToString("N2")</td>
                     </tr>
-
-                    @if (Model.SaleReturns > 0)
-                    {
-                        <tr>
-                            <td>
-                                <div class="fw-semibold text-muted" style="padding-left:16px;">(-) Sale Returns</div>
-                            </td>
-                            <td class="text-right font-mono text-muted">—</td>
-                            <td class="text-right font-mono text-red">(@Model.SaleReturns.ToString("N2"))</td>
-                        </tr>
-                    }
 
                     <tr>
                         <td>
@@ -262,6 +234,11 @@
                 Profit Summary
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:13px;">
+                <div>
+                    <div class="text-muted text-xs">Closing Stock (Info)</div>
+                    <div class="font-mono fw-bold text-muted">Rs. @Model.Inventory.ToString("N2")</div>
+                    <div style="font-size:10px;color:var(--c-text3);">Not in TB (Income Statement basis)</div>
+                </div>
                 <div>
                     <div class="text-muted text-xs">Net Sales</div>
                     <div class="font-mono fw-bold">Rs. @Model.NetSales.ToString("N2")</div>

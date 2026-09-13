@@ -1,0 +1,96 @@
+﻿@using INSolPOS.Models
+@model CompanySettings
+@{
+    ViewBag.Title = "Business Settings";
+    ViewBag.NavContext = "settings";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="max-width:660px;margin:0 auto;">
+    @if (TempData["Success"] != null)
+    {
+           <div class="alert alert-success mb-4"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>
+    }
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-cog text-accent" style="margin-right:8px;"></i>Business / Company Settings</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/Settings/Save" enctype="multipart/form-data">
+
+                <!-- Logo -->
+                <div class="form-group mb-4" style="display:flex;align-items:center;gap:20px;">
+                    <div>
+                        @if (!string.IsNullOrEmpty(Model?.LogoPath))
+                        {
+                            <img src="@Model.LogoPath" alt="Logo"
+                                 style="width:80px;height:80px;object-fit:contain;border:1px solid var(--c-border);border-radius:10px;padding:6px;background:white;" />
+                        }
+                        else
+                        {
+                            <div style="width:80px;height:80px;border:2px dashed var(--c-border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--c-text3);">
+                                <i class="fas fa-image" style="font-size:24px;"></i>
+                            </div>
+                        }
+                    </div>
+                    <div style="flex:1;">
+                        <label class="form-label">COMPANY LOGO</label>
+                        <input type="file" name="logoFile" class="form-control" accept="image/*" />
+                        <div class="text-xs text-muted mt-1">PNG, JPG or SVG. Recommended: 200×200px.</div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column:span 2;">
+                        <label class="form-label">BUSINESS NAME *</label>
+                        <input type="text" name="BusinessName" class="form-control" required
+                               value="@(Model?.BusinessName ?? "")" placeholder="e.g. Ahmed Brothers Traders" />
+                    </div>
+                    <div class="form-group" style="grid-column:span 2;">
+                        <label class="form-label">TAGLINE</label>
+                        <input type="text" name="Tagline" class="form-control"
+                               value="@(Model?.Tagline ?? "")" placeholder="e.g. Wholesale & Retail Distributors" />
+                    </div>
+                    <div class="form-group" style="grid-column:span 2;">
+                        <label class="form-label">ADDRESS</label>
+                        <textarea name="Address" class="form-control" rows="2"
+                                  placeholder="Shop/Office address">@(Model?.Address ?? "")</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PHONE</label>
+                        <input type="text" name="Phone" class="form-control font-mono"
+                               value="@(Model?.Phone ?? "")" placeholder="03XX-XXXXXXX" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">EMAIL</label>
+                        <input type="email" name="Email" class="form-control"
+                               value="@(Model?.Email ?? "")" placeholder="info@business.com" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">WEBSITE</label>
+                        <input type="text" name="Website" class="form-control"
+                               value="@(Model?.Website ?? "")" placeholder="www.business.com" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CURRENCY SYMBOL</label>
+                        <input type="text" name="Currency" class="form-control font-mono"
+                               value="@(Model?.Currency ?? "Rs.")" placeholder="Rs." />
+                    </div>
+                    <div class="form-group" style="grid-column:span 2;">
+                        <label class="form-label">INVOICE FOOTER TEXT</label>
+                        <input type="text" name="InvoiceFooter" class="form-control"
+                               value="@(Model?.InvoiceFooter ?? "")"
+                               placeholder="e.g. Thank you for your business! Goods once sold are not returnable." />
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:12px;font-size:14px;">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
