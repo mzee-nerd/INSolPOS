@@ -9,9 +9,9 @@
 }
 
 <!-- Floating search dropdown (fixed position, always on top) -->
-<div id="floatDropdown" style="display:none;position:fixed;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:9999;min-width:380px;max-height:260px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);"></div>
+<div id="floatDropdown" style="display:none;position:fixed;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;z-index:9999;width:min(90vw,380px);max-height:260px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.12);"></div>
 
-<div style="display:grid;grid-template-columns:1fr 390px;gap:20px;align-items:start;">
+<div class="page-grid-wide">
 
     <!-- LEFT: Cart -->
     <div>
@@ -65,7 +65,7 @@
     </div>
 
     <!-- RIGHT: Sale form -->
-    <div style="position:sticky;top:80px;">
+    <div class="page-grid-sticky">
         <div class="card">
             <div class="card-header"><span class="card-title">Sale Details</span></div>
             <div class="card-body">

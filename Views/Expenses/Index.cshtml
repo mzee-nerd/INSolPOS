@@ -50,7 +50,7 @@
 </div>
 
 <!-- Summary Cards -->
-<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+<div class="stat-grid">
     <div class="stat-card">
         <div class="stat-card-header">
             <span class="stat-label">Total (Filtered)</span>
@@ -90,7 +90,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+<div class="page-grid-narrow">
 
     <!-- Expense Table -->
     <div class="card">
@@ -165,7 +165,7 @@
     <!-- Category Breakdown -->
     @if (Model.Any())
     {
-        <div class="card" style="position:sticky;top:80px;">
+        <div class="card page-grid-sticky">
             <div class="card-header"><span class="card-title">By Category</span></div>
             <div class="card-body" style="padding:12px 16px;">
                 @foreach (var grp in Model.GroupBy(e => e.Category ?? "Uncategorized").OrderByDescending(g => g.Sum(e => e.Amount)))

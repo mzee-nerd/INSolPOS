@@ -7,7 +7,7 @@
     decimal total = ViewBag.Total ?? 0m;
 }
 
-<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+<div class="stat-grid">
     <div class="stat-card">
         <div class="stat-label">Total Capital</div>
         <div class="stat-value font-mono text-accent">Rs. @total.ToString("N0")</div>
@@ -32,7 +32,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+<div class="page-grid-wide">
     <div class="card">
         <div class="card-header"><span class="card-title">Capital Entries</span></div>
         <div class="table-wrap">
@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <div style="position:sticky;top:80px;">
+    <div class="page-grid-sticky">
         <div class="card">
             <div class="card-header"><span class="card-title"><i class="fas fa-coins text-amber" style="margin-right:8px;"></i>Add Capital Entry</span></div>
             <div class="card-body">
