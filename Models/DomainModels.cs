@@ -134,6 +134,7 @@ namespace INSolPOS.Models
         public decimal CommissionPercentage { get; set; }
         public DateTime? ExpiryDate { get; set; }
         public string? BatchNo { get; set; }
+        public string? Color { get; set; }
         public decimal CurrentStock { get; set; } // in loose units
         public decimal MinStockLevel { get; set; }
         public bool IsActive { get; set; } = true;
@@ -330,6 +331,8 @@ namespace INSolPOS.Models
         public decimal LooseQty { get; set; }
         public decimal TotalQty => (CartonQty * (Product?.CartonQty ?? 1)) + LooseQty;
         public decimal SalePrice { get; set; }
+        public decimal PurchaseRate { get; set; }
+        public string? BatchNo { get; set; }
         public decimal Discount { get; set; }
         public decimal TotalAmount => (TotalQty * SalePrice) - Discount;
     }

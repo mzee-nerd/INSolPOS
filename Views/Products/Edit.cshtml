@@ -57,6 +57,12 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label class="form-label">PRODUCT COLOR</label>
+                            <input type="color" name="Color" id="colorInput" class="form-control" value="@(Model?.Color ?? "#4f6ef7")"
+                                   style="height:42px;padding:4px;cursor:pointer;" />
+                            <div class="text-xs text-muted mt-1">Used to distinguish products visually</div>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">BASE UNIT *</label>
                             <select name="UnitId" class="form-control" required>
                                 <option value="">Select unit...</option>

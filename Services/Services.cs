@@ -134,11 +134,11 @@ namespace INSolPOS.Services
             _db.Sales.Add(sale);
             await _db.SaveChangesAsync();
 
-            // Update customer ledger for credit sales
-            if (sale.IsCredit && sale.CustomerId.HasValue)
+            // Update customer ledger for all sales to registered customers (not just credit)
+            if (sale.CustomerId.HasValue)
             {
                 await _ledgerService.AddEntryAsync(sale.CustomerId.Value,
-                    $"Sale Invoice #{sale.InvoiceNo}", sale.TotalAmount, 0, "Sale", sale.Id);
+                    $"Sale Invoice #{sale.InvoiceNo}", sale.TotalAmount, sale.PaidAmount, "Sale", sale.Id);
             }
 
             return sale;

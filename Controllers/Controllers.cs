@@ -766,7 +766,7 @@ namespace INSolPOS.Controllers
         [HttpPost]
         public async Task<IActionResult> NewSale(Sale sale,
             List<int> productIds, List<decimal> cartonQtys, List<decimal> looseQtys,
-            List<decimal> prices, List<decimal> discounts)
+            List<decimal> prices, List<decimal> discounts, List<string?> batchNos, List<decimal> purchaseRates)
         {
             sale.CreatedByUserId = CurrentUserId!.Value;
             sale.SaleDate = DateTime.Now;
@@ -784,6 +784,8 @@ namespace INSolPOS.Controllers
                     LooseQty = looseQtys.Count > i ? looseQtys[i] : 0,
                     SalePrice = prices.Count > i ? prices[i] : 0,
                     Discount = discounts.Count > i ? discounts[i] : 0,
+                    BatchNo = batchNos.Count > i ? batchNos[i] : null,
+                    PurchaseRate = purchaseRates.Count > i ? purchaseRates[i] : (product?.PurchasePrice ?? 0),
                     Product = product
                 };
                 sale.Items.Add(item);

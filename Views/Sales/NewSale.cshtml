@@ -15,14 +15,22 @@
 
     <!-- LEFT: Cart -->
     <div>
-        <!-- Search bar -->
+        <!-- Search bar with color filter -->
         <div class="card mb-4">
             <div class="card-body" style="padding:12px 16px;">
-                <div style="position:relative;">
-                    <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--c-text3);"></i>
-                    <input type="text" id="productSearch"
-                           placeholder="Type product name to search or scan barcode..."
-                           class="form-control" style="padding-left:38px;font-size:14px;" autofocus />
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <div style="position:relative;flex:1;">
+                        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--c-text3);"></i>
+                        <input type="text" id="productSearch"
+                               placeholder="Type product name to search or scan barcode..."
+                               class="form-control" style="padding-left:38px;font-size:14px;" autofocus />
+                    </div>
+                    <div style="position:relative;width:140px;">
+                        <i class="fas fa-palette" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--c-text3);font-size:13px;"></i>
+                        <select id="colorFilter" class="form-control" style="padding-left:32px;font-size:13px;" onchange="filterByColor()">
+                            <option value="">All Colors</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,6 +57,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>Product</th>
+                                <th style="width:90px;">Batch</th>
                                 <th style="width:75px;">Cartons</th>
                                 <th style="width:75px;">Loose</th>
                                 <th style="width:100px;">Price/Unit</th>
@@ -164,15 +173,39 @@
                 cartonQty = p.CartonQty,
                 salePrice = p.SalePrice,
                 wholesalePrice = p.WholesalePrice,
+                purchasePrice = p.PurchasePrice,
                 commissionPercentage = p.CommissionPercentage,
                 currentStock = p.CurrentStock,
-                unitName = p.Unit != null ? p.Unit.Abbreviation : "Pcs"
+                unitName = p.Unit != null ? p.Unit.Abbreviation : "Pcs",
+                color = p.Color ?? "",
+                batchNo = p.BatchNo ?? ""
             })));
 
         let cart = [];
         let searchTimer = null;
+        let colorFilterValue = "";
         const searchInput = document.getElementById('productSearch');
         const dropdown    = document.getElementById('floatDropdown');
+
+        // Build color filter dropdown on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const colorSet = new Set();
+            PRODUCTS.forEach(p => { if (p.color) colorSet.add(p.color); });
+            const colorSelect = document.getElementById('colorFilter');
+            Array.from(colorSet).sort().forEach(color => {
+                const opt = document.createElement('option');
+                opt.value = color;
+                opt.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${color};margin-right:4px;"></span> ${color}`;
+                opt.textContent = color;
+                colorSelect.appendChild(opt);
+            });
+        });
+
+        function filterByColor() {
+            colorFilterValue = document.getElementById('colorFilter').value;
+            const q = searchInput.value.trim();
+            if (q) showDropdown(q);
+        }
 
         // ── Search filtering (client-side from pre-loaded list)
         searchInput.addEventListener('input', () => {
@@ -192,22 +225,31 @@
         function showDropdown(q) {
             const saleType = parseInt(document.getElementById('saleTypeSelect').value);
             const ql = q.toLowerCase();
-            const matches = PRODUCTS.filter(p =>
+            let matches = PRODUCTS.filter(p =>
                 p.name.toLowerCase().includes(ql) || p.barcode.toLowerCase().includes(ql)
-            ).slice(0, 12);
+            );
+
+            // Apply color filter if set
+            if (colorFilterValue) {
+                matches = matches.filter(p => p.color === colorFilterValue);
+            }
+
+            matches = matches.slice(0, 12);
 
             if (!matches.length) {
                 dropdown.innerHTML = `<div style="padding:16px;color:var(--c-text3);font-size:13px;text-align:center;">No products found for "${q}"</div>`;
             } else {
                 dropdown.innerHTML = matches.map(p => {
                     const price = saleType === 3 ? (p.wholesalePrice || p.salePrice) : p.salePrice;
+                    const colorDot = p.color ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${p.color};margin-right:6px;border:1px solid rgba(0,0,0,0.15);"></span>` : '';
                     return `<div onclick='addToCart(${JSON.stringify(p).replace(/'/g,"&#39;")})'
                         style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;"
                         onmouseover="this.style.background='var(--c-surface2)'" onmouseout="this.style.background=''">
                         <div>
-                            <div style="font-size:13.5px;font-weight:600;">${p.name}</div>
+                            <div style="font-size:13.5px;font-weight:600;display:flex;align-items:center;">${colorDot}${p.name}</div>
                             <div style="font-size:11px;color:var(--c-text3);">
                                 ${p.barcode ? 'Code: ' + p.barcode + ' &nbsp;|&nbsp; ' : ''}
+                                ${p.batchNo ? 'Batch: ' + p.batchNo + ' &nbsp;|&nbsp; ' : ''}
                                 Stock: <strong style="color:${p.currentStock > 0 ? 'var(--c-green)' : 'var(--c-red)'}">${p.currentStock}</strong>
                             </div>
                         </div>
@@ -240,7 +282,9 @@
             const price = saleType === 3 ? (p.wholesalePrice || p.salePrice) : p.salePrice;
             cart.push({ id: p.id, name: p.name, cartonQty: 0, looseQty: 1,
                         price: price, discount: 0, cartonSize: p.cartonQty || 1,
-                        commissionPct: p.commissionPercentage || 0 });
+                        commissionPct: p.commissionPercentage || 0,
+                        batchNo: p.batchNo || '', purchaseRate: p.purchasePrice || 0,
+                        color: p.color || '' });
             lastAddedId = p.id;
             renderCart();
             focusCarton(p.id);
@@ -268,12 +312,16 @@
             document.getElementById('cartRows').innerHTML = cart.map((item, i) => {
                 const totalQty = (item.cartonQty * item.cartonSize) + item.looseQty;
                 const amount   = (totalQty * item.price) - item.discount;
+                const colorDot = item.color ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background-color:${item.color};border:1px solid rgba(0,0,0,0.15);margin-right:6px;"></span>` : '';
                 return `<tr>
                     <td style="color:var(--c-text3);font-size:11px;">${i+1}</td>
                     <td>
-                        <div style="font-weight:600;">${item.name}</div>
+                        <div style="font-weight:600;display:flex;align-items:center;">${colorDot}${item.name}</div>
                         <div style="font-size:10px;color:var(--c-text3);">1 ctn = ${item.cartonSize} pcs</div>
                     </td>
+                    <td><input type="text" id="batch_${item.id}" value="${item.batchNo}" placeholder="Batch"
+                        style="width:85px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:monospace;font-size:11px;"
+                        onchange="cart[${i}].batchNo=this.value;renderCart()" /></td>
                     <td><input type="number" id="carton_${item.id}" value="${item.cartonQty}" min="0" step="1"
                         style="width:65px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:6px;padding:4px 6px;color:var(--c-text);font-family:monospace;font-size:12px;"
                         onchange="cart[${i}].cartonQty=parseFloat(this.value)||0;renderCart()"
@@ -341,6 +389,8 @@
                 <input type="hidden" name="looseQtys"  value="${item.looseQty}" />
                 <input type="hidden" name="prices"     value="${item.price}" />
                 <input type="hidden" name="discounts"  value="${item.discount}" />
+                <input type="hidden" name="batchNos"   value="${item.batchNo || ''}" />
+                <input type="hidden" name="purchaseRates" value="${item.purchaseRate || 0}" />
             `).join('');
         }
 

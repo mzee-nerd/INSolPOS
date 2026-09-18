@@ -23,6 +23,7 @@
         <table id="prodTable">
             <thead>
                 <tr>
+                    <th style="width:36px;"></th>
                     <th>Product</th>
                     <th>Category</th>
                     <th class="text-center">Carton Size</th>
@@ -42,7 +43,14 @@
                     var isLow       = p.CurrentStock <= p.MinStockLevel;
                     var isExpired   = p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now;
                     var isExpiring  = p.ExpiryDate.HasValue && p.ExpiryDate < DateTime.Now.AddDays(30) && !isExpired;
-                    <tr>
+                    var rowBorder = !string.IsNullOrEmpty(p.Color) ? $"border-left: 4px solid {p.Color};" : "";
+                    <tr style="@rowBorder">
+                        <td>
+                            @if (!string.IsNullOrEmpty(p.Color))
+                            {
+                                <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background-color:@p.Color;border:1px solid rgba(0,0,0,0.15);" title="@p.Color"></span>
+                            }
+                        </td>
                         <td>
                             <div class="fw-semibold">@p.Name</div>
                             <div class="text-xs text-muted font-mono">@(p.Barcode ?? "—")</div>
